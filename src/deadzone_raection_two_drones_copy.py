@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 #     ||          ____  _ __
 #  +------+      / __ )(_) /_______________ _____  ___
@@ -39,33 +40,96 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.utils import uri_helper
 from cflib.utils.reset_estimator import reset_estimator
 from cflib.crazyflie.swarm import CachedCfFactory
+import math
+import time
 
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
 uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
+
+def move_to_position(cf, target, v_max=0.3, dt=0.05, tol=0.02):
+    """
+    cf: Crazyflie object
+    target: (x, y, z, yaw)
+    v_max: max linear speed [m/s]
+    dt: control period [s]
+    tol: position tolerance [m]
+    """
+
+    while True:
+        state = cf.state_estimate
+        dx = target[0] - state.x
+        dy = target[1] - state.y
+        dz = target[2] - state.z
+
+        dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+        if dist < tol:
+            break
+
+        scale = min(v_max / dist, 1.0)
+        vx = dx * scale
+        vy = dy * scale
+        vz = dz * scale
+
+        cf.commander.send_velocity_world_setpoint(vx, vy, vz, 0)
+        time.sleep(dt)
+
+    cf.commander.send_velocity_world_setpoint(0, 0, 0, 0)
+
+
 sequences = {
     0: [
-    (0.0, -0.5, 0.4, 0),
-    (0.0, -0.5, 1.2, 0),
-    (0.5, -0.5, 1.2, 0),
-    (0.5, -0.5, 0.4, 0),
-    (0.5, -0.5, 0.0, 0)
+    (-1.0, -1.0, 0.4, 0),
+    (-1.0, -1.0, 0.6, 0),
+    (1.0, 1.0, 0.6, 0),
+    (1.0, 1.0, 0.4, 0),
     ],
     1: [
-    (0.0, 0.5, 0.4, 0),
-    (0.0, 0.5, 1.2, 0),
-    (0.5, 0.5, 1.2, 0),
-    (0.5, 0.5, 0.4, 0),
-    (0.5, 0.5, 0.0, 0)
+    ( 1.0,  1.0, 0.4, 0),
+    ( 1.0,  1.0, 0.6, 0),
+    (-1.0, -1.0, 0.6, 0),
+    (-1.0, -1.0, 0.4, 0),
     ]
     }
     
+curr_pos = {uri1: (0, 0, 0),
+            uri2: (0, 0, 0)
+            }
+
+
+def about2collide(uri, pos1, pos2, safety_distance):
+    temp_curr_pos = curr_pos.copy()
+    curr_pos.update({uri: pos1})
+    
+    dx = pos1[0] - pos2[0]
+    dy = pos1[1] - pos2[1]
+    dz = pos1[2] - pos2[2]
+    distance = (dx**2 + dy**2 + dz**2)**0.5
+    return distance < safety_distance
+
+
+def setup_state_logging(cf):
+    logconf = LogConfig(name='State', period_in_ms=50)
+    logconf.add_variable('kalman.stateX', 'float')
+    logconf.add_variable('kalman.stateY', 'float')
+    logconf.add_variable('kalman.stateZ', 'float')
+
+    cf.state_estimate = type('', (), {})()
+
+    def cb(ts, data, _):
+        cf.state_estimate.x = data['kalman.stateX']
+        cf.state_estimate.y = data['kalman.stateY']
+        cf.state_estimate.z = data['kalman.stateZ']
+
+    logconf.data_received_cb.add_callback(cb)
+    cf.log.add_config(logconf)
+    logconf.start()
 
 def take_off(cf, position):
     take_off_time = 1.0
@@ -80,21 +144,24 @@ def take_off(cf, position):
         time.sleep(sleep_time)
 
 
-def position_callback(timestamp, data, logconf):
+def position_callback(uri, timestamp, data, logconf):
     x = data['kalman.stateX']
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
+    global curr_pos
+    curr_pos[uri] = (x, y, z)
     print('pos: ({}, {}, {})'.format(x, y, z))
 
 
 def start_position_printing(scf):
+    uri = scf.cf.link_uri
     log_conf = LogConfig(name='Position', period_in_ms=500)
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
 
     scf.cf.log.add_config(log_conf)
-    log_conf.data_received_cb.add_callback(position_callback)
+    log_conf.data_received_cb.add_callback(position_callback, uri)
     log_conf.start()
 
 
@@ -109,13 +176,24 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        print('Setting position {}'.format(position))
+        move_to_position(cf, position, v_max=0.25)    
+        
+        
+        """ print('Setting position {}'.format(position))
         for i in range(50):
             cf.commander.send_position_setpoint(position[0],
                                                 position[1],
                                                 position[2],
                                                 position[3])
-            time.sleep(0.1)
+
+            if about2collide(num_seq, curr_pos[0], curr_pos[1], safety_distance):
+                print('Warning: Drones are too close! Changing movement.')
+
+                if num_seq == 0:
+                    cf.commander.send_position_setpoint(curr_pos[uri1][0], curr_pos[uri1][1], curr_pos[uri1][2], 0.0)
+                else:
+                    cf.commander.send_position_setpoint(curr_pos[uri2][0], curr_pos[uri2][1], curr_pos[uri2][2], 0.0)
+            time.sleep(0.1) """
 
     cf.commander.send_stop_setpoint()
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
@@ -135,9 +213,13 @@ if __name__ == '__main__':
         uri2: [1]
         }
 
+
+    safety_distance = 0.6  # meters
+
     factory = CachedCfFactory(rw_cache='./cache')
     with Swarm(uris, factory=factory) as swarm:
-        
+        swarm.parallel_safe(start_position_printing)
+        swarm.parallel_safe(setup_state_logging)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
 
 

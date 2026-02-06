@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 #
 #     ||          ____  _ __
 #  +------+      / __ )(_) /_______________ _____  ___
@@ -39,33 +40,50 @@ from cflib.crazyflie.syncCrazyflie import SyncCrazyflie
 from cflib.utils import uri_helper
 from cflib.utils.reset_estimator import reset_estimator
 from cflib.crazyflie.swarm import CachedCfFactory
+from functools import partial
 
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
 sequences = {
     0: [
-    (0.0, -0.5, 0.4, 0),
-    (0.0, -0.5, 1.2, 0),
-    (0.5, -0.5, 1.2, 0),
-    (0.5, -0.5, 0.4, 0),
-    (0.5, -0.5, 0.0, 0)
+    (-1.0, -1.0, 0.4, 0),
+    (-1.0, -1.0, 0.6, 0),
+    (1.0, 1.0, 0.6, 0),
+    (1.0, 1.0, 0.4, 0),
+    (1.0, 1.0, 0.0, 0)
     ],
     1: [
-    (0.0, 0.5, 0.4, 0),
-    (0.0, 0.5, 1.2, 0),
-    (0.5, 0.5, 1.2, 0),
-    (0.5, 0.5, 0.4, 0),
-    (0.5, 0.5, 0.0, 0)
+    ( 1.0,  1.0, 0.4, 0),
+    ( 1.0,  1.0, 0.6, 0),
+    (-1.0, -1.0, 0.6, 0),
+    (-1.0, -1.0, 0.4, 0),
+    (-1.0, -1.0, 0.0, 0),
     ]
     }
     
+curr_pos = {uri1: (0, 0, 0),
+            uri2: (0, 0, 0)
+            }
+
+def about2collide(pos1, pos2, safety_distance):
+    dx = pos1[0] - pos2[0]
+    dy = pos1[1] - pos2[1]
+    dz = pos1[2] - pos2[2]
+    distance = (dx**2 + dy**2 + dz**2)**0.5
+    return distance < safety_distance
+
+def limit_velocity(cf, xy=0.25, z=0.20):
+    # m/s
+    cf.param.set_value('posCtlPid.xVelMax', xy)
+    cf.param.set_value('posCtlPid.yVelMax', xy)
+    cf.param.set_value('posCtlPid.zVelMax', z)
 
 def take_off(cf, position):
     take_off_time = 1.0
@@ -80,26 +98,35 @@ def take_off(cf, position):
         time.sleep(sleep_time)
 
 
-def position_callback(timestamp, data, logconf):
+def position_callback(uri, timestamp, data, logconf):
     x = data['kalman.stateX']
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
+    curr_pos[uri] = (x, y, z)
     print('pos: ({}, {}, {})'.format(x, y, z))
 
 
 def start_position_printing(scf):
+    uri = scf.cf.link_uri
+
     log_conf = LogConfig(name='Position', period_in_ms=500)
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
 
     scf.cf.log.add_config(log_conf)
-    log_conf.data_received_cb.add_callback(position_callback)
+
+    # Bind uri into the callback
+    log_conf.data_received_cb.add_callback(partial(position_callback, uri))
+
     log_conf.start()
 
 
 def run_sequence(scf, num_seq):
     cf = scf.cf
+
+    limit_velocity(cf, xy=0.25, z=0.20)
+    #limit_tilt(cf, deg=10.0)
 
     # Arm the Crazyflie
     cf.platform.send_arming_request(True)
@@ -110,11 +137,21 @@ def run_sequence(scf, num_seq):
 
     for position in sequences[num_seq]:
         print('Setting position {}'.format(position))
-        for i in range(50):
-            cf.commander.send_position_setpoint(position[0],
-                                                position[1],
-                                                position[2],
-                                                position[3])
+        for i in range(80):
+            if about2collide(curr_pos[uri1], curr_pos[uri2], safety_distance):
+                print('Warning: Drones are too close! Changing movement.')
+
+                if num_seq == 0:
+                    cf.commander.send_position_setpoint(-1, 1, 0.5, 0.0)
+                else:
+                    cf.commander.send_position_setpoint(1, -1, 0.5, 0.0)
+            else:
+                cf.commander.send_position_setpoint(position[0],
+                                                    position[1],
+                                                    position[2],
+                                                    position[3])
+
+
             time.sleep(0.1)
 
     cf.commander.send_stop_setpoint()
@@ -135,9 +172,12 @@ if __name__ == '__main__':
         uri2: [1]
         }
 
+
+    safety_distance = 0.6  # meters
+
     factory = CachedCfFactory(rw_cache='./cache')
     with Swarm(uris, factory=factory) as swarm:
-        
+        swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
 
 

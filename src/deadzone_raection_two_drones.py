@@ -45,8 +45,8 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
@@ -173,7 +173,7 @@ if __name__ == '__main__':
         }
 
 
-    safety_distance = 0.6  # meters
+    safety_distance = 1.0  # meters
 
     factory = CachedCfFactory(rw_cache='./cache')
     with Swarm(uris, factory=factory) as swarm:

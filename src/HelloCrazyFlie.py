@@ -8,7 +8,7 @@ from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.syncLogger import SyncLogger
 
 # URI to the Crazyflie to connect to
-uri = 'radio://0/100/2M/E7E7E7E708'
+uri = 'radio://0/100/2M/E7E7E7E704'
 
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)

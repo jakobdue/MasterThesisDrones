@@ -9,7 +9,7 @@ from cflib.crazyflie.commander import Commander
 
 
 # URI to the Crazyflie to connect to
-uri = 'radio://0/100/2M/E7E7E7E708'
+uri = 'radio://0/100/2M/E7E7E7E706'
 # Only output errors from the logging framework
 logging.basicConfig(level=logging.ERROR)
 
@@ -24,6 +24,11 @@ def take_off(cf, position):
     for i in range(steps):
         cf.commander.send_velocity_world_setpoint(0, 0, vz, 0)
         time.sleep(sleep_time)
+        if (input() == ' '):
+            print('Stopping')
+            cf.commander.send_stop_setpoint()
+            return
+
 
 
 
@@ -53,6 +58,7 @@ if __name__ == '__main__':
 
         time.sleep(0.1)    
         print('Disconnected')
+
 
 
 

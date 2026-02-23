@@ -8,7 +8,7 @@ from cflib.utils import uri_helper
 from cflib.utils.reset_estimator import reset_estimator
 
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
 
 # Change the sequence according to your setup
 #             x    y    z  YAW

@@ -45,24 +45,39 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+
+position_params = {
+    uri1: [0],
+    uri2: [1]
+    }
+
+uris = [uri1, uri2]
+
+# Variables:
+current_vec_lenght = 0.35
+eta_safety_distance = 0.7  # meters
+activation_distance = 0.5  # meters
+k_stiffness = 6.0
+force_scaler = 1.0
+
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
 sequences = {
     0: [
-    (1.0, -1.0, 0.4, 0),
-    (1.0, -1.0, 0.4, 0),
-    (-1.0, 1.0, 0.4, 0),
+    (1.0, -1.0, 0.7, 0),
+    (1.0, -1.0, 0.7, 0),
+    (-1.0, 1.0, 0.7, 0),
     (-1.0, 1.0, 0.4, 0),
     (-1.0, 1.0, 0.0, 0)
     ],
     1: [
-    ( 1.0,  1.0, 0.4, 0),
-    ( 1.0,  1.0, 0.6, 0),
-    (-1.0, -1.0, 0.6, 0),
+    ( 1.0,  1.0, 0.7, 0),
+    ( 1.0,  1.0, 0.7, 0),
+    (-1.0, -1.0, 0.7, 0),
     (-1.0, -1.0, 0.4, 0),
     (-1.0, -1.0, 0.0, 0),
     ]
@@ -82,6 +97,7 @@ def quadratic_penalty_g(pos1, pos2, eta_safety_distance):
     return ((dx/distance, dy/distance, dz/distance), distance - eta_safety_distance)
 
 
+"""
 def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness, activation_distance):
     vec, g = quadratic_penalty_g(pos1, pos2, eta_safety_distance)
 
@@ -94,11 +110,24 @@ def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness, activation_dista
         print(f"No barrier force. g={g:.2f}")
         return (0, 0, 0)
 
-
     else:
         print(f'Barrier active! g={g:.2f}')
         val = -eta_safety_distance * (1/g) 
         return (vec[0] * val, vec[1] * val, vec[2] * val)
+         
+"""
+
+def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness, activation_distance):
+    vec, g = quadratic_penalty_g(pos1, pos2, eta_safety_distance)
+
+    if g <= 0:
+        print(f'COLLISION IMMINENT! g={g:.2f}')
+        val = -(1/2) * k_stiffness * g**2
+        return (vec[0] * val, vec[1] * val, vec[2] * val)
+
+    else: #g > 0:
+        print(f"No barrier force. g={g:.2f}")
+        return (0, 0, 0)
          
 
 
@@ -150,7 +179,7 @@ def start_position_printing(scf):
 def run_sequence(scf, num_seq):
     cf = scf.cf
 
-    limit_velocity(cf, xy=0.35, z=0.30)
+    limit_velocity(cf, xy=0.35, z=0.40)
     #limit_tilt(cf, deg=10.0)
 
     # Arm the Crazyflie
@@ -170,15 +199,34 @@ def run_sequence(scf, num_seq):
     for position in sequences[num_seq]:
         print('Setting position {}'.format(position))
         for i in range(40):
-            force = barrier_force(curr_pos[me], curr_pos[other], eta_safety_distance, k_stiffness=1.0, activation_distance=0.7)
+            force = barrier_force(curr_pos[me], curr_pos[other], eta_safety_distance, k_stiffness=k_stiffness, activation_distance=activation_distance)
             print(f'Calculated barrier force: {force}')
             if force != (0, 0, 0):
-                cf.commander.send_velocity_world_setpoint(force[0], force[1], force[2], 0)
+                
+                current_vec = (position[0] - curr_pos[me][0], position[1] - curr_pos[me][1], position[2] - curr_pos[me][2])
+                #print(f'Current vector to target: {current_vec}')
+                length = ((current_vec[0]**2 + current_vec[1]**2 + current_vec[2]**2)**0.5)
+                if length > 0:
+                    current_vec = (current_vec[0] / length * current_vec_lenght, current_vec[1] / length * current_vec_lenght, current_vec[2] / length * current_vec_lenght)
+                print(f'Scaled current vector to target: {current_vec}')
+
+                # scLE THE FORCE 
+                force = (force[0] * force_scaler, force[1] * force_scaler, force[2] * force_scaler)
+                
+                cf.commander.send_velocity_world_setpoint(force[0] + current_vec[0], force[1] + current_vec[1], force[2] + current_vec[2], 0)
+                
+                #cf.commander.send_velocity_world_setpoint(force[0], force[1], force[2], 0)
             else:
                 cf.commander.send_position_setpoint(position[0],
                                                     position[1],
                                                     position[2],
                                                     position[3])
+            # if space bar pressed then send stop
+            #if (input() == ' '):
+            #    print('Stopping')
+            #    cf.commander.send_stop_setpoint()
+            #    return
+
 
 
             time.sleep(0.1)
@@ -194,16 +242,7 @@ def run_sequence(scf, num_seq):
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
-    uris = [uri1, uri2]
-    #sequences = [sequence1, sequence2]
-    position_params = {
-        uri1: [0],
-        uri2: [1]
-        }
-
-
-    eta_safety_distance = 0.2  # meters
-
+    
     factory = CachedCfFactory(rw_cache='./cache')
     with Swarm(uris, factory=factory) as swarm:
         swarm.parallel_safe(start_position_printing)

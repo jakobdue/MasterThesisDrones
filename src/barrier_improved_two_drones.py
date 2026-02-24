@@ -9,8 +9,8 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
 
 position_params = {
     uri1: [0],
@@ -21,9 +21,10 @@ uris = [uri1, uri2]
 
 # Variables:
 current_vec_lenght = 1.0
-eta_safety_distance = 1.5  # meters
-k_stiffness = 1.0
+eta_safety_distance = 3.0  # meters
+k_stiffness = 2.0
 force_scaler = 1.0
+max_reactiion = 0.5
 
 
 # Change the sequence according to your setup
@@ -33,16 +34,16 @@ sequences = {
     0: [
     (1.0, -1.0, 0.7, 0),
     (1.0, -1.0, 0.7, 0),
-    (-1.0, 1.0, 0.7, 0),
+    #(-1.0, -1.0, 0.7, 0),
     (-1.0, 1.0, 0.4, 0),
     (-1.0, 1.0, 0.0, 0)
     ],
     1: [
-    ( 1.0,  1.0, 0.7, 0),
-    ( 1.0,  1.0, 0.7, 0),
-    (-1.0, -1.0, 0.7, 0),
-    (-1.0, -1.0, 0.4, 0),
-    (-1.0, -1.0, 0.0, 0),
+    ( -1.0,  1.0, 0.7, 0),
+    ( -1.0,  1.0, 0.7, 0),
+    #(-1.0, -1.0, 0.7, 0),
+    (1.0, -1.0, 0.4, 0),
+    (1.0, -1.0, 0.0, 0),
     ]
     }
     
@@ -88,36 +89,12 @@ def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance, k_stiffness):
         print(f'COLLISION IMMINENT! distance={distance:.2f}')
         vec = (grad_p[0] * k_stiffness, grad_p[1] * k_stiffness, grad_p[2] * k_stiffness)
         length = (vec[0]**2 + vec[1]**2 + vec[2]**2)**0.5
-        if square_dist((0, 0, 0), vec) > current_vec_lenght**2:
-            vec = (vec[0] / length * current_vec_lenght, vec[1] / length * current_vec_lenght, vec[2] / length * current_vec_lenght)
+        if square_dist((0, 0, 0), vec) > max_reactiion**2:
+            vec = (vec[0] / length * max_reactiion, vec[1] / length * max_reactiion, vec[2] / length * max_reactiion)
         return vec
     else:
         print(f"No barrier force. distance={distance:.2f}")
         return (0, 0, 0)
-
-
-
-
-
-
-
-
-
-
-
-
-
-""" def quadratic_penalty_g(pos1, pos2, eta_safety_distance):
-    dx = pos1[0] - pos2[0]
-    dy = pos1[1] - pos2[1]
-    dz = pos1[2] - pos2[2]
-
-    distance = (dx**2 + dy**2 + dz**2)**0.5
-    if distance == 0:
-        return ((0, 0, 0), -eta_safety_distance)  # Avoid division by zero
-
-    return ((dx/distance, dy/distance, dz/distance), distance - eta_safety_distance)
- """
 
 def square_dist(pos1, pos2):
     dx = pos1[0] - pos2[0]
@@ -125,20 +102,6 @@ def square_dist(pos1, pos2):
     dz = pos1[2] - pos2[2]
 
     return (dx**2 + dy**2 + dz**2)# avoiding sqrt for efficiency, since we only care about relative distances
-
-
-""" def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness):
-    vec, g = quadratic_penalty_g(pos1, pos2, eta_safety_distance)
-
-    if g <= 0:
-        print(f'COLLISION IMMINENT! g={g:.2f}')
-        val = -k_stiffness * g
-        return (vec[0] * val, vec[1] * val, vec[2] * val)
-
-    else: #g > 0:
-        print(f"No barrier force. g={g:.2f}")
-        return (0, 0, 0)
- """
 
 
 def limit_velocity(cf, xy=0.25, z=0.20):
@@ -153,7 +116,7 @@ def take_off(cf, position):
     steps = int(take_off_time / sleep_time)
     vz = position[2] / take_off_time
 
-    print(f'take off at {position[2]}')
+    #print(f'take off at {position[2]}')
 
     for i in range(steps):
         cf.commander.send_velocity_world_setpoint(0, 0, vz, 0)
@@ -165,7 +128,7 @@ def position_callback(uri, timestamp, data, logconf):
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    print('pos: ({}, {}, {})'.format(x, y, z))
+    #print('pos: ({}, {}, {})'.format(x, y, z))
 
 
 def start_position_printing(scf):
@@ -202,10 +165,10 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        print('Setting position {}'.format(position))
+        #print('Setting position {}'.format(position))
         while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
             force = barrier_force_cubic_spline(curr_pos[me], curr_pos[other], eta_safety_distance, k_stiffness=k_stiffness)
-            print(f'Calculated barrier force: {force}')
+            #print(f'Calculated barrier force: {force}')
             if force != (0, 0, 0):
                 
                 current_vec = (position[0] - curr_pos[me][0], position[1] - curr_pos[me][1], position[2] - curr_pos[me][2])
@@ -213,7 +176,7 @@ def run_sequence(scf, num_seq):
 
                 if length > 0:
                     current_vec = (current_vec[0] / length * current_vec_lenght, current_vec[1] / length * current_vec_lenght, current_vec[2] / length * current_vec_lenght)
-                print(f'Scaled current vector to target: {current_vec}')
+                #print(f'Scaled current vector to target: {current_vec}')
 
                 # Scale the force
                 force = (force[0] * force_scaler, force[1] * force_scaler, force[2] * force_scaler)

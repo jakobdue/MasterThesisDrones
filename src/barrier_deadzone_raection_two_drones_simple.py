@@ -9,7 +9,7 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
 uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
 
 position_params = {

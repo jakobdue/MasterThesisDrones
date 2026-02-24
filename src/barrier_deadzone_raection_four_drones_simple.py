@@ -45,10 +45,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
 
 position_params = {
     uri1: [0],

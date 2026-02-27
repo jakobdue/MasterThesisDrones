@@ -18,3 +18,12 @@ def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness, activation_dista
         return (vec[0] * val, vec[1] * val, vec[2] * val)
          
 """
+
+
+
+
+""" def limit_velocity(cf, xy=0.25, z=0.20):
+    # m/s
+    cf.param.set_value('posCtlPid.xVelMax', xy)
+    cf.param.set_value('posCtlPid.yVelMax', xy)
+    cf.param.set_value('posCtlPid.zVelMax', z) """

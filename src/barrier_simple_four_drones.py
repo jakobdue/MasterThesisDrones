@@ -1,36 +1,3 @@
-# -*- coding: utf-8 -*-
-# -*- coding: utf-8 -*-
-#
-#     ||          ____  _ __
-#  +------+      / __ )(_) /_______________ _____  ___
-#  | 0xBC |     / __  / / __/ ___/ ___/ __ `/_  / / _ \
-#  +------+    / /_/ / / /_/ /__/ /  / /_/ / / /_/  __/
-#   ||  ||    /_____/_/\__/\___/_/   \__,_/ /___/\___/
-#
-#  Copyright (C) 2016 Bitcraze AB
-#
-#  Crazyflie Nano Quadcopter Client
-#
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-#
-#  This program is distributed in the hope that it will be useful,
-#  but WITHOUT ANY WARRANTY; without even the implied warranty of
-#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#  GNU General Public License for more details.
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <https://www.gnu.org/licenses/>.
-"""
-Simple example that connects to one crazyflie (check the address at the top
-and update it to your crazyflie address) and send a sequence of setpoints,
-one every 5 seconds.
-
-This example is intended to work with the Loco Positioning System in TWR TOA
-mode and with the Lighthouse Positioning System. It aims at documenting how
-to set the Crazyflie in position control mode and how to send setpoints.
-"""
 import time
 
 import cflib.crtp
@@ -45,9 +12,9 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
 uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
 
 position_params = {
@@ -61,10 +28,9 @@ uris = [uri1, uri2, uri3, uri4]
 
 # Variables:
 num_drones = 4
-current_vec_lenght = 0.35
-eta_safety_distance = 1.0  # meters
-k_stiffness = 6.0
-force_scaler = 1.0
+eta_safety_distance = 0.75  # meters
+k_stiffness = 10.0
+max_speed = 0.5
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
@@ -140,12 +106,12 @@ def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness):
     vec, g = quadratic_penalty_g(pos1, pos2, eta_safety_distance)
 
     if g <= 0:
-        print(f'COLLISION IMMINENT! g={g:.2f}')
+        #print(f'COLLISION IMMINENT! g={g:.2f}')
         val = -k_stiffness * g
         return (vec[0] * val, vec[1] * val, vec[2] * val)
 
     else: #g > 0:
-        print(f"No barrier force. g={g:.2f}")
+        #print(f"No barrier force. g={g:.2f}")
         return (0, 0, 0)
 
 def limit_velocity(cf, xy=0.25, z=0.20):
@@ -172,7 +138,7 @@ def position_callback(uri, timestamp, data, logconf):
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    print('pos: ({}, {}, {})'.format(x, y, z))
+    #print('pos: ({}, {}, {})'.format(x, y, z))
 
 
 def start_position_printing(scf):
@@ -194,8 +160,6 @@ def start_position_printing(scf):
 def run_sequence(scf, num_seq):
     cf = scf.cf
 
-    limit_velocity(cf, xy=0.50, z=0.60)
-
     # Arm the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
@@ -205,41 +169,36 @@ def run_sequence(scf, num_seq):
     
     others = list(range(0,num_drones))
     others = list(map(lambda x: uris[x], others))
-    others = (list(others)).remove(me) or list(others) 
-
+    others = list(filter(lambda x: x != me, others))
+   
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
         print('Setting position {}'.format(position))
         while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
+            current_vec = sub_vecs(position, curr_pos[me])
+            length = vec_length(current_vec)
+            current_vec = scale_vec(current_vec, (1/length)*max_speed) if length > 0 else (0, 0, 0)
             
             force_list = []
             for other in others:
-                force_list = force_list + list(barrier_force(curr_pos[me], curr_pos[other], eta_safety_distance, k_stiffness=k_stiffness))
-            # calculate the total barrier force by summing the contributions from all other drones
-            force = (sum(force_list[0::3]), sum(force_list[1::3]), sum(force_list[2::3]))
+                force_list.append(barrier_force(curr_pos[me], curr_pos[other], eta_safety_distance, k_stiffness=k_stiffness))
+            # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+            force = (0, 0, 0)
+            for f in force_list:
+                force = add_vecs(force, f)
             
-            print(f'Calculated barrier force: {force}')
             if force != (0, 0, 0):
-                
-                current_vec = sub_vecs(position, curr_pos[me])
-                length = vec_length(current_vec)
-                if length > 0:
-                    current_vec = scale_vec(current_vec, (1/length)*current_vec_lenght)
-                print(f'Scaled current vector to target: {current_vec}')
-
-                # Scale the force
-                force = scale_vec(force, force_scaler)
                 vec_to_send = add_vecs(force, current_vec)
+                #Scale the total vector to the max_reactiion if it is too long
+                vec_to_send_length = vec_length(vec_to_send)
+                if vec_to_send_length > max_speed:
+                    current_vec = scale_vec(vec_to_send, max_speed / vec_to_send_length) 
+                else:
+                    current_vec = vec_to_send
                 
-                cf.commander.send_velocity_world_setpoint(vec_to_send[0], vec_to_send[1], vec_to_send[2], 0)
+            cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
 
-            else:
-                cf.commander.send_position_setpoint(position[0],
-                                                    position[1],
-                                                    position[2],
-                                                    position[3])
-     
             time.sleep(0.1)
 
     cf.commander.send_stop_setpoint()

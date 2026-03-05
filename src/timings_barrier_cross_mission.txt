@@ -1,0 +1,49 @@
+Cross missions: 
+
+
+Barrier Simple:
+Barrier Simple algorithm runs in: 13.716885145753622
+Barrier Simple algorithm runs in: 18.57235997899261
+Barrier Simple algorithm runs in: 13.20201153124799
+Barrier Simple algorithm runs in: 12.484107677009888
+Barrier Simple algorithm runs in: 14.084006520512048
+Barrier Simple algorithm runs in: 17.58831564625143
+Barrier Simple algorithm runs in: 15.187288937493577
+Barrier Simple algorithm runs in: 14.076393604496843
+Barrier Simple algorithm runs in: 13.436667864763876
+Barrier Simple algorithm runs in: 15.694048062519869
+
+
+Barrier Improved:
+
+Barrier Improved algorithm runs in: 11.188110781498835 (One Kiss)
+Barrier Improved algorithm runs in: 9.430841822744696
+Barrier Improved algorithm runs in: 11.933835895761149
+Barrier Improved algorithm runs in: 10.028986364748562
+-------- Chrash ---------
+
+Barrier Improved algorithm runs in: 9.423033281505923
+Barrier Improved algorithm runs in: 11.654021197493421
+Barrier Improved algorithm runs in: 9.934437374773552
+Barrier Improved algorithm runs in: 11.316177708271425(Kiss)
+Barrier Improved algorithm runs in: 11.385814437497174
+Barrier Improved algorithm runs in: 10.924430572995334
+Barrier Improved algorithm runs in: 9.184453573005158
+
+
+Barrier Improved, dynamic speed + orientation aware:
+
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 9.154190073022619
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.411250500008464(one kiss)
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 8.775593531259801
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 8.178257072999259
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.389669260242954
+-------- Crash ---------
+-------- Crash ---------
+-- ------ Crash ---------
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.898690593792708
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 9.99462609323382
+-------- Crash ---------
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 9.035134250239935
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 11.526721437243395
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 8.759227239512256

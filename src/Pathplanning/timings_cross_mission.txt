@@ -1,0 +1,26 @@
+Cross mission: 
+
+AStar Run cross:
+A* algorithm runs in: 16.393561051765573
+A* algorithm runs in: 16.356716822992894
+A* algorithm runs in: 16.383982510480564
+A* algorithm runs in: 16.401044698272017
+A* algorithm runs in: 16.385058218744234
+A* algorithm runs in: 16.39476622901566
+A* algorithm runs in: 16.38865413525491
+A* algorithm runs in: 16.417541958013317
+A* algorithm runs in: 16.38327940624731
+A* algorithm runs in: 16.401007177235442
+
+RRTstar Run cross:
+RRT* algorithm runs in: 19.65771326025424
+RRT* algorithm runs in: 20.883042833505897
+No path found
+RRT* algorithm runs in: 20.91555542725837
+RRT* algorithm runs in: 20.943895239499398
+RRT* algorithm runs in: 23.489757510236814
+RRT* algorithm runs in: 20.92244572924392
+RRT* algorithm runs in: 20.2759418857313
+RRT* algorithm runs in: 19.618532343491097
+RRT* algorithm runs in: 20.26231425003789
+RRT* algorithm runs in: 20.22829891675792

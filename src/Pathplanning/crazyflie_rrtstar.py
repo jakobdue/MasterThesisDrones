@@ -35,19 +35,29 @@ from cflib.utils import uri_helper
 # ----------------------------
 # Crazyflie URIs (edit as needed)
 # ----------------------------
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
 uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
 uris = [uri1, uri2, uri3, uri4]
 
 # Missions: ((x,y,z), (x,y,z)) in grid coordinates
-missions = [
+mission_1 = [
     ((-5, -5, 0), (5, 5, 0)),
     ((-5, 5, 0), (5, -5, 0)),
     ((0, -5, 0), (0, 5, 0)),
     ((3, -5, 0), (3, 5, 0)),
 ]
+
+missions = [
+    ((-1, -1, 0), (5, 5, 0)),
+    ((-1, 1, 0), (5, -5, 0)),
+    ((1, 1, 0), (-5, -5, 0)),
+    ((1, -1, 0), (-5, 5, 0))
+]
+
+runtimes = []
+
 
 position_params = {
     uri1: [0],
@@ -428,6 +438,7 @@ def run_sequence(scf, num_seq, sequences):
 
     take_off(cf, sequences[num_seq][0])
     time.sleep(1.0)
+    start = time.perf_counter()
 
     for position in sequences[num_seq]:
         print(f"[{scf.cf.link_uri}] Setting position {position}")
@@ -437,6 +448,11 @@ def run_sequence(scf, num_seq, sequences):
 
     cf.commander.send_stop_setpoint()
     cf.commander.send_notify_setpoint_stop()
+
+    end = time.perf_counter()
+    runtime = end - start
+    runtimes.append(runtime)
+
     time.sleep(0.1)
 
 
@@ -446,7 +462,7 @@ def run_sequence(scf, num_seq, sequences):
 if __name__ == "__main__":
     # Plan
     paths = plan_multiple_paths_rrtstar(missions)
-    plot_paths(paths)
+    #plot_paths(paths)
 
     # Build sequences
     sequences = {}
@@ -468,3 +484,11 @@ if __name__ == "__main__":
     with Swarm(uris, factory=factory) as swarm:
         swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=args_dict)
+
+    # calculate average runtimes and write to file
+    avg_runtime = sum(runtimes) / len(runtimes)
+
+    with open("timings_cross_mission.txt", "a") as f:
+        f.write(f"RRT* algorithm runs in: {avg_runtime}\n")
+
+

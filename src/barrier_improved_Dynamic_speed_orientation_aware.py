@@ -10,10 +10,11 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
 uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704') 
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+
 
 position_params = {
     uri1: [0],
@@ -27,11 +28,58 @@ uris = [uri1, uri2, uri3, uri4]
 # Variables:
 num_drones = 4
 eta_safety_distance = 0.5  # meters
+runtimes = []
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
 sequences = {
+    0: [
+    (-0.2, -0.2, 0.7, 0),
+    (1.0, 1.0, 0.4, 0),
+    (1.0, 1.0, 0.0, 0)
+    ],
+    1: [
+    (-0.2,  0.2, 0.7, 0),
+    (1.0, -1.0, 0.4, 0),
+    (1.0, -1.0, 0.0, 0),
+    ],
+    2: [
+    (0.2, 0.2, 0.7, 0),
+    (-1.0, -1.0, 0.4, 0),
+    (-1.0, -1.0, 0.0, 0),
+    ],
+    3: [
+    ( 0.2, -0.2, 0.7, 0),
+    (-1.0, 1.0, 0.4, 0),
+    (-1.0, 1.0, 0.0, 0),
+    ] 
+}
+
+sequence_1 = {
+    0: [
+    (-1, -1, 0.7, 0),
+    (1.2, 1.0, 0.4, 0),
+    (1.2, 1.0, 0.0, 0)
+    ],
+    1: [
+    (-1.0,  1.0, 0.7, 0),
+    (1.0, -1.0, 0.4, 0),
+    (1.0, -1.0, 0.0, 0),
+    ],
+    2: [
+    (0.0, -1.0, 0.7, 0),
+    (-0.2, 1.0, 0.4, 0),
+    (-0.2, 1.0, 0.0, 0),
+    ],
+    3: [
+    ( 0.6, -1.0, 0.7, 0),
+    (0.6, 1.0, 0.4, 0),
+    (0.6, 1.0, 0.0, 0),
+    ] 
+}
+
+old_sequences = {
     0: [
     (1.0, -1.0, 0.7, 0),
     (1.0, -1.0, 0.7, 0),
@@ -206,6 +254,7 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     take_off(cf, sequences[num_seq][0])
+    start = time.perf_counter()
     me = uris[num_seq]
     
     others = list(range(0,num_drones))
@@ -266,6 +315,10 @@ def run_sequence(scf, num_seq):
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
+    end = time.perf_counter()
+    runtime = end - start
+    runtimes.append(runtime)
+
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
     time.sleep(0.1)
@@ -278,6 +331,13 @@ if __name__ == '__main__':
     with Swarm(uris, factory=factory) as swarm:
         swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
+
+    # calculate average runtimes and write to file
+    avg_runtime = sum(runtimes) / len(runtimes)
+
+    with open("timings_barrier_cross_mission.txt", "a") as f:
+        f.write(f"Barrier Improved, dynamic speed + orientation aware algorithm runs in: {avg_runtime}\n")
+
 
 
 

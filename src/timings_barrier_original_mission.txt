@@ -1,0 +1,40 @@
+Barrier Simple Function:
+Barrier Simple algorithm runs in: 12.19089192726824
+Barrier Simple algorithm runs in: 14.313548937512678
+Barrier Simple algorithm runs in: 11.052717281490914
+Barrier Simple algorithm runs in: 13.40340382301656
+Barrier Simple algorithm runs in: 13.219514437500038
+Barrier Simple algorithm runs in: 13.804436718754005
+Barrier Simple algorithm runs in: 13.440876885229954
+Barrier Simple algorithm runs in: 14.832387771020876
+Barrier Simple algorithm runs in: 12.84845667699119
+Barrier Simple algorithm runs in: 15.17255239575752
+
+
+
+Barrier Improved function:
+
+Barrier Improved algorithm runs in: 10.335533687248244
+Barrier Improved algorithm runs in: 8.662680270761484
+Barrier Improved algorithm runs in: 10.237750281492481
+Barrier Improved algorithm runs in: 10.299013146010111
+Barrier Improved algorithm runs in: 9.093062500251108
+Barrier Improved algorithm runs in: 10.052456770747085
+Barrier Improved algorithm runs in: 9.8321530730027
+Barrier Improved algorithm runs in: 10.166015010516276 (Tiny Collision - No Crash)
+Barrier Improved algorithm runs in: 9.694214104252751
+Barrier Improved algorithm runs in: 9.716018155988422
+
+
+Barrier Improved, dynamic speed + orientation aware function:
+
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.292244197713444
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 9.904033708240604
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 12.381527573001222
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 11.276965791505063
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 11.276476947736228
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.016925802017795
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.769791177255684
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 10.030045333507587
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 9.520041853989824
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 9.404696145735215

@@ -18,18 +18,27 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
 uris = [uri1, uri2, uri3, uri4] 
 
-missions = [
+mission_1 = [
     ((-5, -5, 0), (5, 5, 0)),
     ((-5, 5, 0), (5, -5, 0)),
     ((0, -5, 0), (0, 5, 0)),
     ((3, -5, 0), (3, 5, 0))
 ]
+
+missions = [
+    ((-1, -1, 0), (5, 5, 0)),
+    ((-1, 1, 0), (5, -5, 0)),
+    ((1, 1, 0), (-5, -5, 0)),
+    ((1, -1, 0), (-5, 5, 0))
+]
+
+runtimes = []
 
 position_params = {
         uri1: [0],
@@ -198,7 +207,7 @@ def plot_paths(paths):
 
 # Example usage
 paths = plan_multiple_paths(missions)
-plot_paths(paths)
+#plot_paths(paths)
 
 
 sequences = {}
@@ -286,6 +295,7 @@ def run_sequence(scf, num_seq):
 
     take_off(cf, sequences[num_seq][0])
     time.sleep(1.0)
+    start = time.perf_counter()
 
     for position in sequences[num_seq]:
         print('Setting position {}'.format(position))
@@ -299,6 +309,11 @@ def run_sequence(scf, num_seq):
     cf.commander.send_stop_setpoint()
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
+    end = time.perf_counter()
+    runtime = end - start
+    runtimes.append(runtime)
+
+    
 
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
@@ -314,6 +329,11 @@ if __name__ == '__main__':
     with Swarm(uris, factory=factory) as swarm:
         swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
+    # calculate average runtimes and write to file
+    avg_runtime = sum(runtimes) / len(runtimes)
+    
+    with open("timings_cross_mission.txt", "a") as f:
+        f.write(f"A* algorithm runs in: {avg_runtime}\n")
 
 
 

@@ -10,10 +10,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
 
 
 position_params = {
@@ -37,22 +37,26 @@ sequences = {
     0: [
     (-0.2, -0.2, 0.7, 0),
     (1.0, 1.0, 0.4, 0),
-    (1.0, 1.0, 0.0, 0)
+    (-0.4, -0.4, 0.4, 0),
+    (-0.4, -0.4, 0.0, 0)
     ],
     1: [
     (-0.2,  0.2, 0.7, 0),
     (1.0, -1.0, 0.4, 0),
-    (1.0, -1.0, 0.0, 0),
+    (-0.4,  0.4, 0.4, 0),
+    (-0.4,  0.4, 0.0, 0)
     ],
     2: [
     (0.2, 0.2, 0.7, 0),
     (-1.0, -1.0, 0.4, 0),
-    (-1.0, -1.0, 0.0, 0),
+    (0.4, 0.4, 0.4, 0),
+    (0.4, 0.4, 0.0, 0),
     ],
     3: [
     ( 0.2, -0.2, 0.7, 0),
     (-1.0, 1.0, 0.4, 0),
-    (-1.0, 1.0, 0.0, 0),
+    ( 0.4, -0.4, 0.4, 0),
+    ( 0.4, -0.4, 0.0, 0),
     ] 
 }
 
@@ -136,11 +140,17 @@ curr_pos = {uri1: (0, 0, 0),
             uri4: (0, 0, 0)
             } 
 
-def speed_scaler(distance):
-    if distance < 1:
-        return 0.2
+def speed_scaler(distance,inbound):
+    if inbound:
+        if distance < 1:
+            return 0.2
+        else: 
+            return distance * 0.7 - 0.5
     else: 
-        return distance * 0.7 - 0.5
+        if distance < 0.5:
+            return 0.5
+        else:  
+            return distance * 0.7 + 0.2
 
 def add_vecs(vec1, vec2):
     return (vec1[0] + vec2[0], vec1[1] + vec2[1], vec1[2] + vec2[2])
@@ -279,7 +289,7 @@ def run_sequence(scf, num_seq):
                 if dist < closest_drone_dist: 
                     closest_drone_dist = dist
             
-            max_speed = speed_scaler(closest_drone_dist) if drone_inbound[me] else 2
+            max_speed = speed_scaler(closest_drone_dist, drone_inbound[me])
             print(f'Closest drone distance: {closest_drone_dist:.2f}, max speed set to: {max_speed:.2f}')
             # Scale the current vector to unit vector
             current_vec_max_speed = max_speed

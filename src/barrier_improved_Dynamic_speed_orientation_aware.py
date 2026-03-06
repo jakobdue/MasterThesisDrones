@@ -10,10 +10,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
 
 
 position_params = {
@@ -27,7 +27,7 @@ uris = [uri1, uri2, uri3, uri4]
 
 # Variables:
 num_drones = 4
-eta_safety_distance = 0.5  # meters
+eta_safety_distance = 0.65  # meters
 runtimes = []
 
 # Change the sequence according to your setup
@@ -138,9 +138,9 @@ curr_pos = {uri1: (0, 0, 0),
 
 def speed_scaler(distance):
     if distance < 1:
-        return 0.5
+        return 0.2
     else: 
-        return 0.5 * distance
+        return distance * 0.7 - 0.5
 
 def add_vecs(vec1, vec2):
     return (vec1[0] + vec2[0], vec1[1] + vec2[1], vec1[2] + vec2[2])
@@ -179,9 +179,9 @@ def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
     if distance == 0:
         return ((0, 0, 0), 0)  # Avoid division by zero
 
-    if distance < eta_safety_distance:
+    if distance < eta_safety_distance+0.3:
         print(f'COLLISION IMMINENT! distance={distance:.2f}')
-        p = p_eps(distance-0.2, eta_safety_distance, n=3)
+        p = p_eps(distance, eta_safety_distance, n=3)
         grad_p = (p * dx / distance, p * dy / distance, p * dz / distance)
         return (grad_p, distance)    
     
@@ -282,7 +282,8 @@ def run_sequence(scf, num_seq):
             max_speed = speed_scaler(closest_drone_dist) if drone_inbound[me] else 2
             print(f'Closest drone distance: {closest_drone_dist:.2f}, max speed set to: {max_speed:.2f}')
             # Scale the current vector to unit vector
-            current_vec = scale_vec(current_vec, max_speed / current_vec_length if current_vec_length > max_speed else 1)
+            current_vec_max_speed = max_speed
+            current_vec = scale_vec(current_vec, current_vec_max_speed / current_vec_length if current_vec_length > current_vec_max_speed else 1)
             # Calculate the total barrier force by summing the contributions from all other drones in the swarm
             force = (0, 0, 0)
             for f in force_list:
@@ -301,7 +302,7 @@ def run_sequence(scf, num_seq):
                 
             cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
      
-            time.sleep(0.05)
+            #time.sleep(0.05)
 
     cf.commander.send_stop_setpoint()
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie

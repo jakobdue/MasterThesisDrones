@@ -10,10 +10,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
 
 position_params = {
     uri1: [0],
@@ -26,8 +26,8 @@ uris = [uri1, uri2, uri3, uri4]
 
 # Variables:
 num_drones = 4
-eta_safety_distance = 0.5  # meters
-max_speed = 0.6
+eta_safety_distance = 0.65  # meters
+max_speed = 0.5
 runtimes = []
 
 # Change the sequence according to your setup
@@ -252,7 +252,7 @@ def run_sequence(scf, num_seq):
                 
             cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
      
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
     cf.commander.send_stop_setpoint()
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie

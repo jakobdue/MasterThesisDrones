@@ -1,0 +1,42 @@
+
+
+
+Barrier Simple algorithm:
+
+Barrier Simple algorithm runs in: 30.340020771021955
+Barrier Simple algorithm runs in: 29.81747730227653
+Barrier Simple algorithm runs in: 29.563858916488243
+Barrier Simple algorithm runs in: 29.847310312470654
+Barrier Simple algorithm runs in: 29.6029794687056
+Barrier Simple algorithm runs in: 28.801054208452115
+Barrier Simple algorithm runs in: 28.861819062527502
+Barrier Simple algorithm runs in: 28.8547341877711
+Barrier Simple algorithm runs in: 30.288232666789554
+Barrier Simple algorithm runs in: 30.437463781243423
+
+
+
+barrier improved: 
+Barrier Improved algorithm runs in: 29.00929906271631
+Barrier Improved algorithm runs in: 31.142776302498532
+Barrier Improved algorithm runs in: 30.14348304149462
+Barrier Improved algorithm runs in: 30.00758531273459
+Barrier Improved algorithm runs in: 31.39722386476933
+Barrier Improved algorithm runs in: 29.14056709400029
+Barrier Improved algorithm runs in: 30.02428845828399
+Barrier Improved algorithm runs in: 29.03378516677185
+Barrier Improved algorithm runs in: 32.012290177255636
+Barrier Improved algorithm runs in: 29.014793354232097
+
+
+Orientation aware: 
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 24.392412156244973
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 20.888381719007157
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 21.25817710426054
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 27.37190438550897
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 34.749576125264866
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 34.521420573000796
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 29.368242312513757
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 27.875703749799868
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 25.142751739476807
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 25.138176843494875

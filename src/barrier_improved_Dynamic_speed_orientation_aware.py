@@ -10,10 +10,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
 
 
 position_params = {
@@ -33,7 +33,43 @@ runtimes = []
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
-sequences = {
+
+sequences = { # sequence patroll
+    0:[
+    (-1.5,-1.5, 0.7, 0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (-1.5,-1.5, 0.0, 0)
+    ],
+    1: [
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, -1.5, 0.0, 0)
+    ],
+    2: [
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (1.5,  1.5, 0.0, 0),
+    ],
+    3: [
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5,  1.5, 0.0, 0),
+    ],
+}
+
+sequences_ = {
     0: [
     (-0.2, -0.2, 0.7, 0),
     (1.0, 1.0, 0.4, 0),
@@ -57,6 +93,30 @@ sequences = {
     (-1.0, 1.0, 0.4, 0),
     ( 0.4, -0.4, 0.4, 0),
     ( 0.4, -0.4, 0.0, 0),
+    ] 
+}
+
+
+sequences_ = { #Original mission
+    0: [
+    (-1, -1, 0.7, 0),
+    (1.2, 1.0, 0.4, 0),
+    (1.2, 1.0, 0.0, 0)
+    ],
+    1: [
+    (-1.0,  1.0, 0.7, 0),
+    (1.0, -1.0, 0.4, 0),
+    (1.0, -1.0, 0.0, 0),
+    ],
+    2: [
+    (0.0, -1.0, 0.7, 0),
+    (-0.2, 1.0, 0.4, 0),
+    (-0.2, 1.0, 0.0, 0),
+    ],
+    3: [
+    ( 0.6, -1.0, 0.7, 0),
+    (0.6, 1.0, 0.4, 0),
+    (0.6, 1.0, 0.0, 0),
     ] 
 }
 
@@ -346,7 +406,7 @@ if __name__ == '__main__':
     # calculate average runtimes and write to file
     avg_runtime = sum(runtimes) / len(runtimes)
 
-    with open("timings_barrier_cross_mission.txt", "a") as f:
+    with open("timings_barrier_Patroll_mission.txt", "a") as f:
         f.write(f"Barrier Improved, dynamic speed + orientation aware algorithm runs in: {avg_runtime}\n")
 
 

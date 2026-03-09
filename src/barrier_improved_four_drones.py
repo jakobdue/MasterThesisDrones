@@ -10,10 +10,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
 
 position_params = {
     uri1: [0],
@@ -33,7 +33,42 @@ runtimes = []
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
-sequences = {
+sequences = { # sequence patroll
+    0:[
+    (-1.5,-1.5, 0.7, 0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (-1.5,-1.5, 0.0, 0)
+    ],
+    1: [
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, -1.5, 0.0, 0)
+    ],
+    2: [
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (1.5,  1.5, 0.0, 0),
+    ],
+    3: [
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5,  1.5, 0.0, 0),
+    ],
+}
+
+sequences_cross_mission = {
     0: [
     (-0.2, -0.2, 0.7, 0),
     (1.0, 1.0, 0.4, 0),
@@ -56,7 +91,7 @@ sequences = {
     ] 
 }
 
-sequence_1 = {
+sequences_ = { #Original
     0: [
     (-1, -1, 0.7, 0),
     (1.2, 1.0, 0.4, 0),
@@ -286,7 +321,7 @@ if __name__ == '__main__':
     # calculate average runtimes and write to file
     avg_runtime = sum(runtimes) / len(runtimes)
 
-    with open("timings_barrier_cross_mission.txt", "a") as f:
+    with open("timings_barrier_Patroll_mission.txt", "a") as f:
         f.write(f"Barrier Improved algorithm runs in: {avg_runtime}\n")
 
 

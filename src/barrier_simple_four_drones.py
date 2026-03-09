@@ -12,10 +12,10 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
+uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
+uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
+uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
 
 position_params = {
     uri1: [0],
@@ -36,7 +36,42 @@ runtimes = []
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
-sequences = {
+sequences = { # sequence patroll
+    0:[
+    (-1.5,-1.5, 0.7, 0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (-1.5,-1.5, 0.0, 0)
+    ],
+    1: [
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, -1.5, 0.0, 0)
+    ],
+    2: [
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (1.5,  1.5, 0.0, 0),
+    ],
+    3: [
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5, -1.5, 0.7,0),
+    (1.5, -1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (-1.5, 1.5, 0.7, 0),
+    (-1.5,  1.5, 0.0, 0),
+    ],
+}
+
+sequences_ = {
     0: [
     (-0.2, -0.2, 0.7, 0),
     (1.0, 1.0, 0.4, 0),
@@ -223,7 +258,7 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        print('Setting position {}'.format(position))
+        #print('Setting position {}'.format(position))
         while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
             current_vec = sub_vecs(position, curr_pos[me])
             length = vec_length(current_vec)
@@ -274,7 +309,7 @@ if __name__ == '__main__':
     # calculate average runtimes and write to file
     avg_runtime = sum(runtimes) / len(runtimes)
 
-    with open("timings_barrier_cross_mission.txt", "a") as f:
+    with open("timings_barrier_Patroll_mission.txt", "a") as f:
         f.write(f"Barrier Simple algorithm runs in: {avg_runtime}\n")
 
 

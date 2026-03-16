@@ -6,224 +6,59 @@ from cflib.crazyflie.log import LogConfig
 from cflib.utils import uri_helper
 from cflib.crazyflie.swarm import CachedCfFactory
 from functools import partial
+import random
+from pynput import keyboard
 
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709')
-uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703')
-uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
 
+uris = [
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709'),
+    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710'),
 
-position_params = {
-    uri1: [0],
-    uri2: [1],
-    uri3: [2],
-    uri4: [3]
-    } 
+    ]
 
-uris = [uri1, uri2, uri3, uri4]
+position_params = {uri: [i] for i, uri in enumerate(uris)}
 
 # Variables:
-num_drones = 4
+num_drones = len(uris)
 eta_safety_distance = 0.65  # meters
 runtimes = []
+land = False
+landing_req_sent = [False for _ in range(num_drones)]
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
+def on_press(key):
+    global land
+    if key == keyboard.Key.space:
+        land = True
+        print("Landing triggered")
 
-sequences_ = { # sequence patroll
-    0:[
-    (-1.5,-1.5, 0.7, 0),
-    (1.5, -1.5, 0.7, 0),
-    (1.5, 1.5, 0.7, 0),
-    (-1.5, 1.5, 0.7, 0),
-    (-1.5, -1.5, 0.7,0),
-    (-1.5,-1.5, 0.0, 0)
-    ],
-    1: [
-    (1.5, -1.5, 0.7, 0),
-    (1.5, 1.5, 0.7, 0),
-    (-1.5, 1.5, 0.7, 0),
-    (-1.5, -1.5, 0.7,0),
-    (1.5, -1.5, 0.7, 0),
-    (1.5, -1.5, 0.0, 0)
-    ],
-    2: [
-    (1.5, 1.5, 0.7, 0),
-    (-1.5, 1.5, 0.7, 0),
-    (-1.5, -1.5, 0.7,0),
-    (1.5, -1.5, 0.7, 0),
-    (1.5, 1.5, 0.7, 0),
-    (1.5,  1.5, 0.0, 0),
-    ],
-    3: [
-    (-1.5, 1.5, 0.7, 0),
-    (-1.5, -1.5, 0.7,0),
-    (1.5, -1.5, 0.7, 0),
-    (1.5, 1.5, 0.7, 0),
-    (-1.5, 1.5, 0.7, 0),
-    (-1.5,  1.5, 0.0, 0),
-    ],
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
+
+last_distances = {
+    (u1, u2): float('inf')
+    for u1 in uris
+    for u2 in uris
+    if u1 != u2
 }
 
-sequences = { # Cross mission
-    0: [
-    (-0.2, -0.2, 0.7, 0),
-    (1.0, 1.0, 0.4, 0),
-    (1.0, 1.0, 0.0, 0)
-    ],
-    1: [
-    (-0.2,  0.2, 0.7, 0),
-    (1.0, -1.0, 0.4, 1.4),
-    (1.0, -1.0, 0.0, 0),
-    ],
-    2: [
-    (0.2, 0.2, 0.7, 0),
-    (-1.0, -1.0, 0.4, 0),
-    (-1.0, -1.0, 0.0, 0),
-    ],
-    3: [
-    ( 0.2, -0.2, 0.7, 0),
-    (-1.0, 1.0, 0.4, 0),
-    (-1.0, 1.0, 0.0, 0),
-    ] 
-}
+drone_inbound = {uri: False for uri in uris}
 
-
-sequences_ = {
-    0: [
-    (-0.2, -0.2, 0.7, 0),
-    (1.0, 1.0, 0.4, 0),
-    (-0.4, -0.4, 0.4, 0),
-    (-0.4, -0.4, 0.0, 0)
-    ],
-    1: [
-    (-0.2,  0.2, 0.7, 0),
-    (1.0, -1.0, 0.4, 0),
-    (-0.4,  0.4, 0.4, 0),
-    (-0.4,  0.4, 0.0, 0)
-    ],
-    2: [
-    (0.2, 0.2, 0.7, 0),
-    (-1.0, -1.0, 0.4, 0),
-    (0.4, 0.4, 0.4, 0),
-    (0.4, 0.4, 0.0, 0),
-    ],
-    3: [
-    ( 0.2, -0.2, 0.7, 0),
-    (-1.0, 1.0, 0.4, 0),
-    ( 0.4, -0.4, 0.4, 0),
-    ( 0.4, -0.4, 0.0, 0),
-    ] 
-}
-
-
-sequences_ = { #Original mission
-    0: [
-    (-1, -1, 0.7, 0),
-    (1.2, 1.0, 0.4, 0),
-    (1.2, 1.0, 0.0, 0)
-    ],
-    1: [
-    (-1.0,  1.0, 0.7, 0),
-    (1.0, -1.0, 0.4, 0),
-    (1.0, -1.0, 0.0, 0),
-    ],
-    2: [
-    (0.0, -1.0, 0.7, 0),
-    (-0.2, 1.0, 0.4, 0),
-    (-0.2, 1.0, 0.0, 0),
-    ],
-    3: [
-    ( 0.6, -1.0, 0.7, 0),
-    (0.6, 1.0, 0.4, 0),
-    (0.6, 1.0, 0.0, 0),
-    ] 
-}
-
-sequence_1 = {
-    0: [
-    (-1, -1, 0.7, 0),
-    (1.2, 1.0, 0.4, 0),
-    (1.2, 1.0, 0.0, 0)
-    ],
-    1: [
-    (-1.0,  1.0, 0.7, 0),
-    (1.0, -1.0, 0.4, 0),
-    (1.0, -1.0, 0.0, 0),
-    ],
-    2: [
-    (0.0, -1.0, 0.7, 0),
-    (-0.2, 1.0, 0.4, 0),
-    (-0.2, 1.0, 0.0, 0),
-    ],
-    3: [
-    ( 0.6, -1.0, 0.7, 0),
-    (0.6, 1.0, 0.4, 0),
-    (0.6, 1.0, 0.0, 0),
-    ] 
-}
-
-old_sequences = {
-    0: [
-    (1.0, -1.0, 0.7, 0),
-    (1.0, -1.0, 0.7, 0),
-    (-1.0, 1.0, 0.7, 0),
-    (-1.0, 1.0, 0.4, 0),
-    (-1.0, 1.0, 0.0, 0)
-    ],
-    1: [
-    ( 1.0,  1.0, 0.7, 0),
-    ( 1.0,  1.0, 0.7, 0),
-    (-1.0, -1.0, 0.7, 0),
-    (-1.0, -1.0, 0.4, 0),
-    (-1.0, -1.0, 0.0, 0),
-    ] ,
-    2: [
-    ( -1.0,  -1.0, 0.7, 0),
-    ( -1.0,  -1.0, 0.7, 0),
-    (-1.0, -1.0, 0.7, 0),
-    (1.0, 1.0, 0.4, 0),
-    (1.0, 1.0, 0.0, 0),
-    ],
-    3: [
-    ( -1.0,  1.0, 0.7, 0),
-    ( -1.0,  1.0, 0.7, 0),
-    (-1.0, -1.0, 0.7, 0),
-    (1.0, -1.0, 0.4, 0),
-    (1.0, -1.0, 0.0, 0),
-    ] 
-} 
-
-last_distances = {(uri1,uri2): float('inf'),
-                   (uri2,uri1): float('inf'),
-                    (uri1,uri3): float('inf'),
-                    (uri3,uri1): float('inf'),
-                    (uri1,uri4): float('inf'),
-                    (uri4,uri1): float('inf'),
-                    (uri2,uri3): float('inf'),
-                    (uri3,uri2): float('inf'),
-                    (uri2,uri4): float('inf'),
-                    (uri4,uri2): float('inf'),
-                    (uri3,uri4): float('inf'),
-                    (uri4,uri3): float('inf')
-                    }
-
-drone_inbound = {uri1: False,
-                 uri2: False,
-                 uri3: False,
-                 uri4: False
-                }
-    
-curr_pos = {uri1: (0, 0, 0),
-            uri2: (0, 0, 0),
-            uri3: (0, 0, 0),
-            uri4: (0, 0, 0)
-            } 
-
+curr_pos = {uri: (0, 0, 0) for uri in uris}
+                
 def speed_scaler(distance,inbound):
     if inbound:
         if distance < 1:
@@ -290,6 +125,14 @@ def square_dist(pos1, pos2):
 
     return (dx**2 + dy**2 + dz**2)# avoiding sqrt for efficiency, since we only care about relative distances
 
+def random_goal():
+    x = random.uniform(-1.5, 1.5)
+    y = random.uniform(-1.5, 1.5)
+    z = random.uniform(0.5, 2.0)
+    return (x, y, z, 0)
+
+
+
 def take_off(cf, position):
     take_off_time = 1.0
     sleep_time = 0.1
@@ -343,11 +186,13 @@ def start_position_printing(scf):
 def run_sequence(scf, num_seq):
     cf = scf.cf
 
+    goal = random_goal()
+
     # Arm the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
 
-    take_off(cf, sequences[num_seq][0])
+    take_off(cf, goal)
     start = time.perf_counter()
     me = uris[num_seq]
     
@@ -356,12 +201,12 @@ def run_sequence(scf, num_seq):
     others = list(filter(lambda x: x != me, others))
    
     time.sleep(1.0)
-
-    for position in sequences[num_seq]:
-        print('Setting position {}'.format(position))
-        while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
+    
+    while True:
+        print('Setting position {}'.format(goal))
+        while (square_dist(curr_pos[me], goal) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
  
-            current_vec = sub_vecs(position, curr_pos[me])
+            current_vec = sub_vecs(goal, curr_pos[me])
             current_vec_length = vec_length(current_vec) 
             
 
@@ -374,7 +219,7 @@ def run_sequence(scf, num_seq):
                     closest_drone_dist = dist
             
             max_speed = speed_scaler(closest_drone_dist, drone_inbound[me])
-            print(f'Closest drone distance: {closest_drone_dist:.2f}, max speed set to: {max_speed:.2f}')
+            #print(f'Closest drone distance: {closest_drone_dist:.2f}, max speed set to: {max_speed:.2f}')
             # Scale the current vector to unit vector
             current_vec_max_speed = max_speed
             current_vec = scale_vec(current_vec, current_vec_max_speed / current_vec_length if current_vec_length > current_vec_max_speed else 1)
@@ -383,7 +228,7 @@ def run_sequence(scf, num_seq):
             for f in force_list:
                 force = add_vecs(force, f)
             
-            print(f'Calculated individual barrier forces: {force_list}')
+            #print(f'Calculated individual barrier forces: {force_list}')
 
             if force != (0, 0, 0):
                 vec_to_send = add_vecs(force, current_vec)
@@ -396,8 +241,16 @@ def run_sequence(scf, num_seq):
                 
             cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
      
-            #time.sleep(0.05)
-
+            if land and not landing_req_sent[num_seq]:
+                goal = (curr_pos[me][0],curr_pos[me][1],0,0)
+                landing_req_sent[num_seq] = True
+                
+        if goal[2] == 0:
+            break   
+        else: 
+            goal = random_goal()
+        
+    time.sleep(0.5)
     cf.commander.send_stop_setpoint()
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()

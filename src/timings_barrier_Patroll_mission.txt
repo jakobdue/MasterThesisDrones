@@ -54,3 +54,7 @@ Barrier Improved, dynamic speed + orientation aware algorithm runs in: 4.5841209
 Barrier Improved, dynamic speed + orientation aware algorithm runs in: 6.576826499978779
 Barrier Improved, dynamic speed + orientation aware algorithm runs in: 47.966355312506494
 Barrier Improved, dynamic speed + orientation aware algorithm runs in: 42.00497599160299
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 12.698229789599987
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 17.141961829000003
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 14.614426788500168
+Barrier Improved, dynamic speed + orientation aware algorithm runs in: 19.355032958000265

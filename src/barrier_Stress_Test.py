@@ -14,16 +14,16 @@ from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
 
 uris = [
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E702'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E703'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709'),
-    uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
+    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E704'),
+    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705'),
+    uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E706'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E707'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E708'),
+    uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E709'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710'),
 
     ]
 
@@ -134,7 +134,7 @@ def random_goal():
 
 
 def take_off(cf, position):
-    take_off_time = 1.0
+    take_off_time = 2.0
     sleep_time = 0.1
     steps = int(take_off_time / sleep_time)
     vz = position[2] / take_off_time

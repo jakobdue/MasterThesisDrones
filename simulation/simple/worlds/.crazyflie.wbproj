@@ -5,6 +5,6 @@ sceneTreePerspectives: 000000ff00000001000000030000001e000000c0000000fa010000000
 maximizedDockId: -1
 centralWidgetVisible: 1
 orthographicViewHeight: 1
-textFiles: 0 "controllers/crazyflie/crazyflie.c" "controllers/deadzone_raection/deadzone_raection.py"
+textFiles: 0 "../../../../../../../Users/simonkroghanderson/Desktop/Master_thesis/MasterThesisDrones/simulation/simple/controllers/crazyflie/crazyflie.c" "../../../../../../../Users/simonkroghanderson/Desktop/Master_thesis/MasterThesisDrones/simulation/simple/controllers/deadzone_raection/deadzone_raection.py"
 consoles: Console:All:All
 renderingDevicePerspectives: Crazyflie:camera;0;0.888889;0;0

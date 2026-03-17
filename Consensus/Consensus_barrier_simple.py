@@ -224,14 +224,13 @@ def run_sequence(scf, num_seq):
 
         current_vec = (0,0,0)
         for i, neighbor in enumerate(neighboring_drones[me]):
-            if i == 2:
-                current_vec_temp = scale_vec(sub_vecs(curr_pos[me], curr_pos[neighbor]), 0.03)
-            else:
-                current_vec_temp = sub_vecs(curr_pos[neighbor], curr_pos[me])
-                current_vec_length = vec_length(current_vec_temp)
-                if abs(current_vec_length - interdrone_dist_goal) > 0.15: 
-                    if current_vec_length < interdrone_dist_goal:
-                        current_vec_temp = scale_vec(current_vec_temp, -(interdrone_dist_goal-current_vec_length) / current_vec_length ) 
+            current_vec_temp = sub_vecs(curr_pos[neighbor], curr_pos[me])
+            current_vec_length = vec_length(current_vec_temp)
+            if i == 2 and current_vec_length < interdrone_dist_goal: #works?
+                current_vec_temp = scale_vec(current_vec_temp,-1)
+            elif abs(current_vec_length - interdrone_dist_goal) > 0.15: 
+                if current_vec_length < interdrone_dist_goal:
+                    current_vec_temp = scale_vec(current_vec_temp, -(interdrone_dist_goal-current_vec_length) / current_vec_length ) 
 
             current_vec = add_vecs(current_vec, current_vec_temp)
 

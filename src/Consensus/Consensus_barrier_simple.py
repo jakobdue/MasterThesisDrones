@@ -8,6 +8,7 @@ from cflib.crazyflie.swarm import CachedCfFactory
 from functools import partial
 import random
 from pynput import keyboard
+import math
 
 
 from cflib.crazyflie.swarm import Swarm
@@ -16,14 +17,14 @@ from cflib.crazyflie.swarm import Swarm
 uris = [
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
     #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
-    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703'),
+    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703'),
     #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E704'),
-    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705'),
-    uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E706'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E706'),
     #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E707'),
-    uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E708'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E708'),
     uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E709'),
-    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710'),
+    uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710'),
     ]
 
 
@@ -34,11 +35,19 @@ neighboring_drones = {uri: [] for uri in uris}
 # Variables:
 interdrone_dist_goal = 0.8
 hight_from_ground = 1.5
-slack = 0.1 
-lenght_from_third_drone = 
+slack = 0.05
+max_neighbors = 3
+num_drones = len(uris)
+eta_safety_distance = 0.50  # meters
+runtimes = []
+land = False
+landing_req_sent = [False for _ in range(num_drones)]
 
 def diagonal_length(n, k, s=1):
     return s * math.sin(k * math.pi / n) / math.sin(math.pi / n)
+
+lenght_from_third_drone = diagonal_length(num_drones, 2, interdrone_dist_goal)
+
 max_neighbors = 3
 num_drones = len(uris)
 eta_safety_distance = 0.35  # meters
@@ -237,8 +246,11 @@ def run_sequence(scf, num_seq):
             current_vec_temp = sub_vecs(curr_pos[neighbor], curr_pos[me])
             current_vec_length = vec_length(current_vec_temp)
             if i == 2:
-                if current_vec_length < interdrone_dist_goal * 1.5:
-                    current_vec = add_vecs(current_vec, scale_vec(current_vec_temp, - 0.2 / current_vec_length))
+                if abs(current_vec_length - lenght_from_third_drone) > slack:
+                    if current_vec_length < lenght_from_third_drone:
+                        current_vec = add_vecs(current_vec, scale_vec(current_vec_temp, - 0.2 / current_vec_length))
+                    else:
+                        current_vec = add_vecs(current_vec, scale_vec(current_vec_temp, 0.2 / current_vec_length))
             elif abs(current_vec_length - interdrone_dist_goal) > slack: 
                 if current_vec_length < interdrone_dist_goal:
                     current_vec_temp = scale_vec(current_vec_temp, -(interdrone_dist_goal-current_vec_length) / current_vec_length ) 
@@ -246,11 +258,11 @@ def run_sequence(scf, num_seq):
                 current_vec = add_vecs(current_vec, current_vec_temp)
 
         for i, neighbor in enumerate(neighboring_drones[me]):
-                if abs(curr_pos[me][1] - 0) > slack:
-                    if curr_pos[me][1] < 0:
-                        current_vec = add_vecs(current_vec, (0, 0.2, 0))
+                if abs(curr_pos[me][2] - hight_from_ground) > slack:
+                    if curr_pos[me][2] < hight_from_ground:
+                        current_vec = add_vecs(current_vec, (0, 0, 0.2))
                     else:
-                        current_vec = add_vecs(current_vec, (0, -0.2, 0))
+                        current_vec = add_vecs(current_vec, (0, 0, -0.2))
             
             
 

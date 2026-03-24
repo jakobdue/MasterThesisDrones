@@ -1,6 +1,4 @@
 import time
-from turtle import position
-
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
 from cflib.utils import uri_helper
@@ -16,8 +14,8 @@ from cflib.crazyflie.swarm import Swarm
 
 agent_1 = [
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
-    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
-    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703'),
+    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703'),
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E704'),
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705'),
     ]
@@ -41,19 +39,35 @@ neighboring_drones_agent_2 = {uri: [] for uri in agent_2}
 interdrone_dist_goal = 0.8
 slack = 0.10
 max_neighbors = 3
-intra_agent_eta_safety_distance = 0.4
+intra_agent_eta_safety_distance = 0.2
 
 # Barrier function variables:
 num_drones = len(uris)
-eta_safety_distance = 0.65  # meters
+contact_candidate_set = {1: [False for _ in range(len(agent_1))],
+                         2: [False for _ in range(len(agent_2))]
+                        }
+eta_safety_distance = 1.65  # meters
 
 # General variables:
-max_speed = 0.12
+max_speed = 0.3
 runtimes = []
 land = False
-landing_req_sent = [False for _ in range(num_drones)]
+landing_req_sent = [False for _ in range(len(uris))]
 
 
+
+sequences = { # sequence patroll
+    1:[
+    (-1.5,-1.5, 0.7, 0),
+    (1.5, 1.5, 0.7, 0),
+    (1.5, 1.5, 0.0, 0),
+    ],
+    2: [
+    (1.5, 1.5, 0.7, 0),
+    (-1.5,-1.5, 0.7, 0),
+    (-1.5,-1.5, 0.0, 0),
+    ]
+}
 
 # Change the sequence according to your setup
 #             x    y    z  YAW
@@ -128,13 +142,13 @@ def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
         return ((0, 0, 0), 0)  # Avoid division by zero
 
     if distance < eta_safety_distance+0.3:
-        print(f'COLLISION IMMINENT! distance={distance:.2f}')
+        #print(f'COLLISION IMMINENT! distance={distance:.2f}')
         p = p_eps(distance, eta_safety_distance, n=3)
         grad_p = (p * dx / distance, p * dy / distance, p * dz / distance)
         return (grad_p, distance)    
     
     else:
-        print(f"No barrier force. distance={distance:.2f}")
+        #print(f"No barrier force. distance={distance:.2f}")
         return ((0, 0, 0), distance)
 
 def square_dist(pos1, pos2):
@@ -250,65 +264,125 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
     
     
+    for position in sequences[agent]:
+        print('Setting position {}'.format(position))
+        while (square_dist(curr_pos[me], position) > 0.25):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
+            dist_list = [(other, last_distances[(me, other)]) for other in same_agent]
+            dist_list.sort(key=lambda x: x[1])
+            neighbors = [d[0] for d in dist_list[:max_neighbors]]
+            neighboring_drones[me] = neighbors
 
-    while True:  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
-        dist_list = [(other, last_distances[(me, other)]) for other in same_agent]
-        dist_list.sort(key=lambda x: x[1])
-        neighbors = [d[0] for d in dist_list[:max_neighbors]]
-        neighboring_drones[me] = neighbors
+            current_vec = (0,0,0)
+            current_vec = sub_vecs(position, curr_pos[me])
+            current_vec_length = vec_length(current_vec)
 
-        current_vec = (0,0,0)
-        for i, neighbor in enumerate(neighboring_drones[me]):
-            current_vec_temp = sub_vecs(curr_pos[neighbor], curr_pos[me])
-            current_vec_length = vec_length(current_vec_temp)
-            if abs(current_vec_length - interdrone_dist_goal) > slack: 
-                if current_vec_length < interdrone_dist_goal:
-                    current_vec_temp = scale_vec(current_vec_temp, -(interdrone_dist_goal-current_vec_length) / current_vec_length ) 
+            current_vec_length = vec_length(current_vec)
+            if current_vec_length > max_speed:
+                current_vec = scale_vec(current_vec, max_speed / current_vec_length)
 
-                current_vec = add_vecs(current_vec, current_vec_temp)        
-        
-        
-        # Intra agent barrier function:
-        force_list = []
-        closest_drone_dist = float('inf')
-        for other in same_agent:
-            force, dist = barrier_force_cubic_spline(curr_pos[me], curr_pos[other], intra_agent_eta_safety_distance)
-            force_list.append(force)
-            if dist < closest_drone_dist: 
-                closest_drone_dist = dist
-        
-        # Calculate the total barrier force by summing the contributions from all other drones in the swarm
-        force = (0, 0, 0)
-        for f in force_list:
-            force = add_vecs(force, f)
-        
-        if force != (0, 0, 0):
-            print(f'Calculated barrier force: {force}')
-            current_vec = add_vecs(force, current_vec)
+                
+            # Consensus algorithm:
+            for i, neighbor in enumerate(neighboring_drones[me]):
+                current_vec_temp = sub_vecs(curr_pos[neighbor], curr_pos[me])
+                current_vec_length = vec_length(current_vec_temp)
+                if abs(current_vec_length - interdrone_dist_goal) > slack: 
+                    if current_vec_length < interdrone_dist_goal:
+                        current_vec_temp = scale_vec(current_vec_temp, -(interdrone_dist_goal-current_vec_length) / current_vec_length ) 
 
-
-        # Inter agent barrier function:
-        
+                    current_vec = add_vecs(current_vec, current_vec_temp)        
+            
+            
 
             
-        if land and not landing_req_sent[num_seq]:
-            landing(cf, curr_pos[me])
-            break
             
-        #current_vec = scale_vec(current_vec, current_vec_max_speed / current_vec_length if current_vec_length > current_vec_max_speed else 1)
-        current_vec_length = vec_length(current_vec)
-        if current_vec_length > max_speed:
-            current_vec = scale_vec(current_vec, max_speed / current_vec_length) 
+            # Intra agent barrier function:
+            force_list = []
+            closest_drone_dist = float('inf')
+            for other in same_agent:
+                force, dist = barrier_force_cubic_spline(curr_pos[me], curr_pos[other], intra_agent_eta_safety_distance)
+                force_list.append(force)
+                if dist < closest_drone_dist: 
+                    closest_drone_dist = dist
+            
+            # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+            force = (0, 0, 0)
+            for f in force_list:
+                force = add_vecs(force, f)
+            
+            if force != (0, 0, 0):
+                print(f'Calculated barrier force: {force}')
+                current_vec = add_vecs(force, current_vec)
 
-        if vec_length(current_vec) < 0.05:
-            current_vec = (0, 0, 0)
-        cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
-    
+
+            # Inter agent barrier function:
+            agent_center = (0, 0, 0)
+            for neighbour in neighboring_drones[me]:
+                agent_center = add_vecs(agent_center, curr_pos[neighbour])
+            agent_center = scale_vec(agent_center, 1/len(neighboring_drones[me]))
+            surface_norm = sub_vecs(curr_pos[me], agent_center)
+
+            skalar_product = surface_norm[0] * current_vec[0] + surface_norm[1] * current_vec[1] + surface_norm[2] * current_vec[2]
+            
+            agent_index = agent_1.index(me) if agent == 1 else agent_2.index(me)
+            if skalar_product > 0:
+                contact_candidate_set[agent][agent_index] = True
+            else:
+                contact_candidate_set[agent][agent_index] = False
+            
+            if contact_candidate_set[agent][agent_index]:
+                force_list = []
+                closest_drone_dist = float('inf')
+                if agent == 1:
+                    other_agent = agent_2
+                else:
+                    other_agent = agent_1
+                
+                other_agent_candidates = [] # the other agent is 3 - current agent, since agents are 1 and 2
+                # filter the other agent candidates, from agent_1 we only want those that are in agent_2 and vice versa, using the other agent candidates
+                for i, b in enumerate(contact_candidate_set[3-agent]):
+                    if b:
+                        other_agent_candidates.append(other_agent[i])
+                        print(f'me: {me} is a contact candidate, other agent candidate: {other_agent[i]}')
+                
+                for other in other_agent_candidates:
+                    force, dist = barrier_force_cubic_spline(curr_pos[me], curr_pos[other], eta_safety_distance)
+                    force_list.append(force)
+                    if dist < closest_drone_dist: 
+                        closest_drone_dist = dist
+                
+                # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+                force = (0, 0, 0)
+                for f in force_list:
+                    force = add_vecs(force, f)
+                
+                if force != (0, 0, 0):
+                    # print current vec before and after applying the barrier force, to see the effect of the barrier function
+                    print(f'Current vec before applying barrier force: {current_vec}')
+                    print(f'Calculated barrier force: {force}')
+                    current_vec = add_vecs(force, current_vec)
+                    print(f'Current vec after applying barrier force: {current_vec}')
+
+
+
+
+                
+            if land and not landing_req_sent[num_seq]:
+                break
+                
+            #current_vec = scale_vec(current_vec, current_vec_max_speed / current_vec_length if current_vec_length > current_vec_max_speed else 1)
+            current_vec_length = vec_length(current_vec)
+            if current_vec_length > max_speed:
+                current_vec = scale_vec(current_vec, max_speed / current_vec_length) 
+
+            if vec_length(current_vec) < 0.05:
+                current_vec = (0, 0, 0)
+            cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
         
+            
             
         
     
-    
+    landing(cf, curr_pos[me])
     cf.commander.send_stop_setpoint()
     # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()

@@ -10,8 +10,8 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701')
-uri2 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703')
+uri1 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E704')
+uri2 = uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E706')
 uri3 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705')
 uri4 = uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710')
 
@@ -144,7 +144,7 @@ old_sequences = {
     (1.0, -1.0, 0.0, 0),
     ] 
 }
-
+    
 curr_pos = {uri1: (0, 0, 0),
             uri2: (0, 0, 0),
             uri3: (0, 0, 0),
@@ -181,7 +181,7 @@ def p_eps(z, eps, n):
 
 
 # find the gradien of the penalty function p_eps with respect to the position of the drone, which is the barrier force
-def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
+""" def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
     (dx, dy, dz) = sub_vecs(pos1, pos2)
 
     distance = vec_length((dx, dy, dz))
@@ -196,7 +196,109 @@ def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
     
     else:
         print(f"No barrier force. distance={distance:.2f}")
+        return (0, 0, 0) """
+
+""" def cubic_spline_B_derivative(v):
+    abs_v = abs(v)
+    sign_v = 1 if v >= 0 else -1
+
+    if abs_v < 1:
+        # -2v + (3/2)|v| sign(v)
+        return -2*v + 1.5 * abs_v * sign_v
+    elif 1 <= abs_v < 2:
+        # -(1/2)(2 - |v|)^2 sign(v)
+        return -0.5 * (2 - abs_v)**2 * sign_v
+    else:
+        return 0.0
+
+
+def barrier_force_cubic_spline(pos1, pos2, eps):
+    dx, dy, dz = sub_vecs(pos1, pos2)
+    d = vec_length((dx, dy, dz))
+
+    if d < 1e-6:
         return (0, 0, 0)
+
+    # Only apply force inside interaction radius
+    if d >= eps:
+        return (0, 0, 0)
+
+    # --- Compute h(d) ---
+    v = 2 * d / eps
+    B = cubic_spline_B(v)
+    h = 1.5 * B
+
+    # --- Compute h'(d) ---
+    B_prime = cubic_spline_B_derivative(v)
+    h_prime = (3 / eps) * B_prime
+
+    n = 3  # since you're using 3D
+
+    # --- dp/dd ---
+    dp_dd = (h_prime / (d**(n-1))) - ((n - 1) * h / (d**n))
+
+    # --- gradient = dp/dd * (x - y)/d ---
+    scale = -15 * dp_dd / d
+
+    grad = (scale * dx, scale * dy, scale * dz)
+
+    return grad """
+
+
+import jax.numpy as jnp
+from jax import grad
+
+# --- JAX versions of your functions ---
+def cubic_spline_B_jax(v):
+    abs_v = jnp.abs(v)
+    return jnp.where(
+        abs_v < 1,
+        (2/3) - v**2 + 0.5 * abs_v**3,
+        jnp.where(
+            abs_v < 2,
+            (1/6) * (2 - abs_v)**3,
+            0.0
+        )
+    )
+
+def h_eps_jax(z, eps):
+    return 1.5 * cubic_spline_B_jax(2 * z / eps)
+
+def p_eps_jax(z, eps):
+    return h_eps_jax(z, eps) / (z**2)
+
+
+# --- energy function ---
+def energy_jax(p_i, p_j, eps):
+    d = jnp.linalg.norm(p_i - p_j)
+    d = jnp.maximum(d, 1e-6)  # avoid division by zero
+    return p_eps_jax(d, eps)
+
+
+# --- gradient function ---
+grad_energy_jax = grad(energy_jax, argnums=0)
+
+
+# --- FINAL FUNCTION (use this) ---
+def barrier_force_cubic_spline(pos1, pos2, eps):
+    p_i = jnp.array(pos1)
+    p_j = jnp.array(pos2)
+
+    d = jnp.linalg.norm(p_i - p_j)
+
+    # cutoff (same as spline support)
+    if float(d) >= eps:
+        return (0, 0, 0)
+
+    # compute gradient
+    grad_val = grad_energy_jax(p_i, p_j, eps)
+
+    # force = -gradient
+    force = -grad_val
+
+    # convert back to normal tuple (important for Crazyflie code)
+    return (float(force[0]), float(force[1]), float(force[2]))
+
 
 def square_dist(pos1, pos2):
     dx = pos1[0] - pos2[0]
@@ -259,7 +361,7 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        print('Setting position {}'.format(position))
+        #print('Setting position {}'.format(position))
         while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
             current_vec = sub_vecs(position, curr_pos[me])
             current_vec_length = vec_length(current_vec) 
@@ -274,7 +376,7 @@ def run_sequence(scf, num_seq):
             for f in force_list:
                 force = add_vecs(force, f)
             
-            print(f'Calculated individual barrier forces: {force_list}')
+            #print(f'Calculated individual barrier forces: {force_list}')
 
             if force != (0, 0, 0):
                 vec_to_send = add_vecs(force, current_vec)

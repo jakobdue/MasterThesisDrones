@@ -62,3 +62,5 @@ Barrier Improved algorithm runs in: 27.75765494999996
 Barrier Improved algorithm runs in: 34.86989575000007
 Barrier Improved algorithm runs in: 29.615565274999426
 Barrier Improved algorithm runs in: 27.86208974999954
+Barrier Improved algorithm runs in: 12.506000974999779
+Barrier Improved algorithm runs in: 23.655983800000058

@@ -10,19 +10,21 @@ from functools import partial
 
 from cflib.crazyflie.swarm import Swarm
 # URI to the Crazyflie to connect to
-uri1 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701')
-uri2 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703')
-uri3 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705')
-uri4 = uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710')
+uris = [
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
+    uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703'),
+    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E704'),
+    #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E707'),
+    uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E706'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E708'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E709'),
+    #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710'),
+    ]
 
-position_params = {
-    uri1: [0],
-    uri2: [1],
-    uri3: [2],
-    uri4: [3]
-    }
+position_params = {uri: [i] for i, uri in enumerate(uris)}
 
-uris = [uri1, uri2, uri3, uri4]
 
 # Variables:
 num_drones = 4
@@ -33,7 +35,7 @@ runtimes = []
 # Change the sequence according to your setup
 #             x    y    z  YAW
 
-sequences_ = { # sequence patroll
+sequences = { # sequence patroll
     0:[
     (-1.5,-1.5, 0.7, 0),
     (1.5, -1.5, 0.7, 0),
@@ -68,7 +70,7 @@ sequences_ = { # sequence patroll
     ],
 }
 
-sequences = { # cross_mission
+sequences_ = { # cross_mission
     0: [
     (-0.2, -0.2, 0.7, 0),
     (1.0, 1.0, 0.4, 0),
@@ -144,12 +146,8 @@ old_sequences = {
     (1.0, -1.0, 0.0, 0),
     ] 
 }
-
-curr_pos = {uri1: (0, 0, 0),
-            uri2: (0, 0, 0),
-            uri3: (0, 0, 0),
-            uri4: (0, 0, 0)
-            }
+    
+curr_pos = {uri: (0, 0, 0) for uri in uris}
 
 def add_vecs(vec1, vec2):
     return (vec1[0] + vec2[0], vec1[1] + vec2[1], vec1[2] + vec2[2])
@@ -171,32 +169,45 @@ def cubic_spline_B(v):
     else:
         return 0
 
-def h_eps(z, eps):
-    return 1.5 * cubic_spline_B(2 * z / eps)
-
-def p_eps(z, eps, n):
-    if n not in (2, 3):
-        raise ValueError("n must be 2 or 3")
-    return h_eps(z, eps) / (z ** (n - 1))
-
-
 # find the gradien of the penalty function p_eps with respect to the position of the drone, which is the barrier force
-def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
-    (dx, dy, dz) = sub_vecs(pos1, pos2)
-
-    distance = vec_length((dx, dy, dz))
-    if distance == 0:
-        return (0, 0, 0)  # Avoid division by zero
-
-    if distance < eta_safety_distance:
-        print(f'COLLISION IMMINENT! distance={distance:.2f}')
-        p = p_eps(distance-0.2, eta_safety_distance, n=3)
-        grad_p = (p * dx / distance, p * dy / distance, p * dz / distance)
-        return grad_p    
-    
+def cubic_spline_B_derivative(v):
+    if v < 1:
+        return -2*v + 1.5 * v ** 2
+    elif 1 <= v < 2:
+        return -0.5 * (2 - v)**2
     else:
-        print(f"No barrier force. distance={distance:.2f}")
+        return 0.0
+
+def barrier_force_cubic_spline(pos1, pos2, eps):
+    dx, dy, dz = sub_vecs(pos2, pos1)
+    z = vec_length((dx, dy, dz))
+
+    if z < 1e-6:
         return (0, 0, 0)
+
+    # Only apply force inside interaction radius
+    if z >= eps:
+        return (0, 0, 0)
+
+    # Compute h(z)
+    v = 2 * z / eps
+    B = cubic_spline_B(v)
+    h = 1.5 * B
+
+    # Compute h'(z)
+    B_prime = cubic_spline_B_derivative(v)
+    h_prime = (3 / eps) * B_prime
+
+    n = 3  # since we're using 3D
+
+    # p_prime (Negative gradient of the penalty function with respect to z)
+    p_prime = (z * h_prime - (n-1) * h) / z**n 
+
+    # gradient = dp/dz * (x - y)/z
+    grad = (p_prime * dx, p_prime * dy, p_prime * dz)
+
+    return grad
+
 
 def square_dist(pos1, pos2):
     dx = pos1[0] - pos2[0]
@@ -259,7 +270,7 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        print('Setting position {}'.format(position))
+        #print('Setting position {}'.format(position))
         while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
             current_vec = sub_vecs(position, curr_pos[me])
             current_vec_length = vec_length(current_vec) 
@@ -274,7 +285,7 @@ def run_sequence(scf, num_seq):
             for f in force_list:
                 force = add_vecs(force, f)
             
-            print(f'Calculated individual barrier forces: {force_list}')
+            #print(f'Calculated individual barrier forces: {force_list}')
 
             if force != (0, 0, 0):
                 vec_to_send = add_vecs(force, current_vec)
@@ -321,7 +332,7 @@ if __name__ == '__main__':
     # calculate average runtimes and write to file
     avg_runtime = sum(runtimes) / len(runtimes)
 
-    with open("timings_barrier_Patroll_mission.txt", "a") as f:
+    with open("timings_barrier_patrol_mission.txt", "a") as f:
         f.write(f"Barrier Improved algorithm runs in: {avg_runtime}\n")
 
 

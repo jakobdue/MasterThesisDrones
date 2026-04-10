@@ -2,12 +2,10 @@ import matplotlib.pyplot as plt
 
 
 # constants: 
-eta_safety_distance = 0.5
+eta_safety_distance = 1.0
 T = 50
-dt = 1 / (T - 1) # normalize to the number of timesteps.
-barrier_threshhold = 0.001
-path_lenght_threshhold = 400
-difference_threshhold = 0.00001
+barrier_threshhold = 0.01
+path_lenght_threshhold = 3
 
 type Point = tuple[float, float, float]
 
@@ -28,11 +26,7 @@ def vec_length(vec):
 def squared_vec_length(vec):
     return (vec[0]**2 + vec[1]**2 + vec[2]**2)
 
-def clip(vec, max_norm=40.0):
-    norm = vec_length(vec)
-    if norm > max_norm:
-        return scale_vec(max_norm / norm, vec)
-    return vec
+
 
 def cubic_spline_B(v): 
     if abs(v) < 1:
@@ -97,8 +91,7 @@ def total_path_energy(paths:list[Path]):
     # calculate the total lenght of a path by summing the distances between consecutive points only taking the square root in the end to save computation time.
     for path in paths: 
         for k in range(len(path)-1): 
-            diff = sub_vecs(path[k+1], path[k])
-            total_path_length_energy += squared_vec_length(diff) / dt
+            total_path_length_energy += squared_vec_length(sub_vecs(path[k+1], path[k]))
     
     total_barrier_energy = 0.0
     for k in range(T):
@@ -121,7 +114,7 @@ def gradient_barrier_energy(paths:list[Path]):
               continue
             else:
                 grad_smooth[i][k] = scale_vec(
-                    2 / dt,
+                    2,
                     sub_vecs(
                         sub_vecs(scale_vec(2, paths[i][k]), paths[i][k-1]),
                         paths[i][k+1]
@@ -167,41 +160,33 @@ def interpolate_path(path: Path) -> Path:
     return interpolated_path
         
 
-def clamp_point_above_ground(point: Point) -> Point:
-    return (point[0], point[1], max(point[2], 0.0))
-
 def barrier_path_optimizer(paths: list[Path], alpha: float, iterations: int) -> list[Path]:
     _lambda = 1
     counter = 0
-    for _ in range(iterations):
+    while True:
         counter += 1
-        _lambda += 0.2
+        if counter % 1000 == 0:
+            _lambda *= 10
         prev_path_energy, prev_barrie_energy = total_path_energy(paths)
         prev_barrie_energy *= _lambda
 
         grad_smooth, grad_barrier = gradient_barrier_energy(paths)
-        grad_barrier = [[clip(scale_vec(_lambda, grad)) for grad in path] for path in grad_barrier]
 
         for i in range(len(paths)):
             for k in range(1,T-1):
                 # update the path points using gradient descent
                 paths[i][k] = add_vecs(paths[i][k], scale_vec(-alpha, add_vecs(grad_smooth[i][k], grad_barrier[i][k])))
-
-                #makes sure that the drone does not go below the ground level
-                paths[i][k] = clamp_point_above_ground(paths[i][k])
         
         
-
+        # 
         new_path_energy, new_barrie_energy = total_path_energy(paths)
-        if abs(new_path_energy - prev_path_energy) < difference_threshhold and abs(new_barrie_energy - prev_barrie_energy) < difference_threshhold:
-            print("Converged at iteration:", counter)
+        if abs(new_path_energy - prev_path_energy) < 1e-6 and abs(new_barrie_energy - prev_barrie_energy) < 1e-6:
             break
         # look at the difference in total energy and look for change, if there is not so much change in the energy, we can stop the optimization early.
         if new_path_energy < path_lenght_threshhold and new_barrie_energy < barrier_threshhold:
-            print("Energy below threshold at iteration:", counter)
             break
     
-    print("New path energy:", new_path_energy, "New barrier energy:", new_barrie_energy, "iterations:", counter)
+    print("New path energy:", new_path_energy, "New barrier energy:", new_barrie_energy, "Iterations:", counter)
     return paths
 
 
@@ -218,6 +203,19 @@ drone4: Path = interpolate_path([(2, 2, 0.0), (-2, -2, -0.02)])
 
 
 
+""" #plot a graph of the paths of the drones in 3D space using matplotlib
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot([point[0] for point in drone1], [point[1] for point in drone1], [point[2] for point in drone1], label='drone1')
+ax.plot([point[0] for point in drone2], [point[1] for point in drone2], [point[2] for point in drone2], label='drone2')
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+ax.legend()
+plt.show() """
+
+
+
 
 
 
@@ -226,7 +224,7 @@ drones: list[Path] = [drone1,
                       drone3,
                       drone4]
 
-new_paths = barrier_path_optimizer(drones, alpha=0.001, iterations=1500)
+new_paths = barrier_path_optimizer(drones, alpha=0.01, iterations=1000)
 
 # print the new paths after optimization in matplotlib
 fig = plt.figure()
@@ -252,97 +250,3 @@ ax.set_zlim(0, 3)
 ax.set_box_aspect([4, 4, 3])  # matches x,y,z ranges
 ax.legend()
 plt.show()
-
-
-
-
-
-
-
-cross_sequences = {
-    0: [(-0.2, -0.2, 0.7), (1.0, 1.0, 0.01)],
-    1: [(-0.2,  0.201, 0.7), (1.0, -1.0, 0.02)],
-    2: [(0.2, 0.201, 0.7), (-1.0, -1.0, 0.01)],
-    3: [(0.2, -0.2, 0.7), (-1.0, 1.0, 0.02)],
-}
-
-
-
-original_sequences = {
-    0: [(-1.0, -1.0, 0.7), (1.2, 1.0, 0.0)],
-    1: [(-1.0,  1.0, 0.7), (1.0, -1.0, 0.0)],
-    2: [(0.0, -1.0, 0.7), (-0.2, 1.0, 0.0)],
-    3: [(0.6, -1.0, 0.7), (0.6, 1.0, 0.0)],
-}
-
-
-drones = [
-    interpolate_path(cross_sequences[i])
-    for i in range(len(cross_sequences))
-]
-
-
-new_paths = barrier_path_optimizer(drones, alpha=0.001, iterations=1500)
-
-# print the new paths after optimization in matplotlib
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-for i, path in enumerate(new_paths):
-    ax.plot(
-        [point[0] for point in path],
-        [point[1] for point in path],
-        [point[2] for point in path],
-        label=f'drone{i+1}'
-    )
-
-# axis labels
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
-
-# set axis limits
-ax.set_xlim(-2, 2)
-ax.set_ylim(-2, 2)
-ax.set_zlim(0, 3)
-ax.set_box_aspect([4, 4, 3])  # matches x,y,z ranges
-ax.legend()
-plt.show()
-
-
-
-""" 
-
-drones = [
-    interpolate_path(original_sequences[i])
-    for i in range(len(original_sequences))
-]
-
-
-
-new_paths = barrier_path_optimizer(drones, alpha=0.001, iterations=1500)
-
-# print the new paths after optimization in matplotlib
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
-
-for i, path in enumerate(new_paths):
-    ax.plot(
-        [point[0] for point in path],
-        [point[1] for point in path],
-        [point[2] for point in path],
-        label=f'drone{i+1}'
-    )
-
-# axis labels
-ax.set_xlabel('X')
-ax.set_ylabel('Y')
-ax.set_zlabel('Z')
-
-# set axis limits
-ax.set_xlim(-2, 2)
-ax.set_ylim(-2, 2)
-ax.set_zlim(0, 3)
-ax.set_box_aspect([4, 4, 3])  # matches x,y,z ranges
-ax.legend()
-plt.show() """

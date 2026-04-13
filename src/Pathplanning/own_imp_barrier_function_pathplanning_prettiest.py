@@ -6,7 +6,7 @@ eta_safety_distance = 0.5
 T = 50
 dt = 1 / (T - 1) # normalize to the number of timesteps.
 barrier_threshhold = 0.001
-path_lenght_threshhold = 400
+path_lenght_threshhold = 150
 difference_threshhold = 0.00001
 
 type Point = tuple[float, float, float]

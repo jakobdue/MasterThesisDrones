@@ -35,10 +35,10 @@ from cflib.utils import uri_helper
 # ----------------------------
 # Crazyflie URIs (edit as needed)
 # ----------------------------
-uri1 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E707')
+uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
 uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E708')
 uri3 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E703')
-uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E701')
+uri4 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701')
 uris = [uri1, uri2, uri3, uri4]
 curr_pos = {uri: (0, 0, 0) for uri in uris}
 
@@ -369,7 +369,7 @@ def plot_paths(paths: List[Optional[List[Tuple[int, int, int]]]]) -> None:
         print(f"Average path length: {total_length / count:.2f}")
 
     plt.show()
-    fig.savefig("paths_rrtstar.pdf")
+    fig.savefig("paths_rrtstar_fast.pdf")
 
 
 # ----------------------------
@@ -400,6 +400,11 @@ def path_to_sequence(path: List[Tuple[int, int, int]]) -> List[Tuple[float, floa
     seq.append((float(last_x)/100*20, float(last_y)/100*20, 0.0, 0.0))
     return seq
 
+def square_dist(pos1, pos2):
+    dx = pos1[0] - pos2[0]
+    dy = pos1[1] - pos2[1]
+    dz = pos1[2] - pos2[2]
+    return dx*dx + dy*dy + dz*dz
 
 # ----------------------------
 # Crazyflie control helpers
@@ -437,6 +442,7 @@ def run_sequence(scf, num_seq, sequences):
 
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
+    me = uris[num_seq]
 
     take_off(cf, sequences[num_seq][0])
     time.sleep(1.0)
@@ -444,7 +450,7 @@ def run_sequence(scf, num_seq, sequences):
 
     for position in sequences[num_seq]:
         print(f"[{scf.cf.link_uri}] Setting position {position}")
-        for _ in range(25):
+        while (square_dist(curr_pos[me], position) > 0.15):
             cf.commander.send_position_setpoint(position[0], position[1], position[2], position[3])
             time.sleep(0.1)
 
@@ -463,7 +469,7 @@ def run_sequence(scf, num_seq, sequences):
 # ----------------------------
 if __name__ == "__main__":
     # Plan
-    paths = plan_multiple_paths_rrtstar(missions)
+    paths = plan_multiple_paths_rrtstar(mission_1)
     #plot_paths(paths)
 
     # Build sequences

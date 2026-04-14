@@ -24,3 +24,10 @@ RRT* algorithm runs in: 20.2759418857313
 RRT* algorithm runs in: 19.618532343491097
 RRT* algorithm runs in: 20.26231425003789
 RRT* algorithm runs in: 20.22829891675792
+
+
+
+fast version RRTstar Run cross:
+RRT* algorithm runs in: 4.3141619584930595
+RRT* algorithm runs in: 4.323084333482257
+RRT* algorithm runs in: 4.159293145996344

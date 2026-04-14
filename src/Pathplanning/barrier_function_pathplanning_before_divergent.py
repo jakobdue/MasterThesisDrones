@@ -54,7 +54,7 @@ def generate_circle_crossing(num_drones=20, radius=1.5, z=0.7):
     return sequences
 
 
-original_sequences = generate_circle_crossing(50)
+#original_sequences = generate_circle_crossing(50)
 
 
 # interpolate points in the paths to have T points in total. there is always two points in the path, so we can interpolate T-2 points between them.
@@ -88,8 +88,8 @@ def interpolate_path(path: Path, noise_std: float = 0.01) -> Path:
 
 
 drones = [
-    interpolate_path(original_sequences[i])
-    for i in range(len(original_sequences))
+    interpolate_path(cross_sequences[i])
+    for i in range(len(cross_sequences))
 ]
 
 

@@ -10,18 +10,28 @@ import numpy as np
 # ----------------------------
 # 1. Define state space
 # ----------------------------
-space = ob.RealVectorStateSpace(3)
+NUM_DRONES = 10
+MIN_SEPARATION = 0.3
+lanning_algorithm = "RRT*"
 
-bounds = ob.RealVectorBounds(3)
+def create_drone_space():
+    drone_space = ob.RealVectorStateSpace(3)
 
-bounds.setLow(0, -1.8)   # x
-bounds.setLow(1, -1.8)   # y
-bounds.setLow(2, 0)    # z
+    bounds = ob.RealVectorBounds(3)
+    bounds.setLow(0, -1.8)   # x
+    bounds.setLow(1, -1.8)   # y
+    bounds.setLow(2, 0.0)    # z
 
-bounds.setHigh(0, 1.8)
-bounds.setHigh(1, 1.8)
-bounds.setHigh(2, 3)
-space.setBounds(bounds)
+    bounds.setHigh(0, 1.8)
+    bounds.setHigh(1, 1.8)
+    bounds.setHigh(2, 3.0)
+
+    drone_space.setBounds(bounds)
+    return drone_space
+
+space = ob.CompoundStateSpace()
+for _ in range(NUM_DRONES):
+    space.addSubspace(create_drone_space(), 1.0)
 
 # ----------------------------
 # 2. Custom validity checker
@@ -31,12 +41,18 @@ class ValidityChecker(ob.StateValidityChecker):
         super().__init__(si)
 
     def isValid(self, state):
-        (x,y,z) = state[0], state[1], state[2]
-        y = state[1]
-        z = state[2]
-        return x * x + y * y + z * z > 1.0 * 1.0 * 1.0
+        for i in range(NUM_DRONES):
+            for j in range(i + 1, NUM_DRONES):
+                dx = state[i][0] - state[j][0]
+                dy = state[i][1] - state[j][1]
+                dz = state[i][2] - state[j][2]
 
+                dist_sq = dx * dx + dy * dy + dz * dz
 
+                if dist_sq < MIN_SEPARATION * MIN_SEPARATION:
+                    return False
+
+        return True
 # ----------------------------
 # 3. SimpleSetup
 # ----------------------------
@@ -47,30 +63,93 @@ checker = ValidityChecker(si)
 si.setStateValidityChecker(checker)
 si.setup()
 
-start = space.allocState()
-start[0] = 0.01
-start[1] = -1.5
-start[2] = 0.0
+start_positions = [
+    (-1.70, -1.70, 0.10),
+    (-1.70, -1.20, 0.20),
+    (-1.70, -0.70, 0.30),
+    (-1.70, -0.20, 0.40),
+    (-1.70,  0.30, 0.50),
+    (-1.70,  0.80, 0.60),
+    (-1.70,  1.10, 0.70),
+    (-1.20,  1.50, 0.80),
+    (-0.70,  1.50, 0.90),
+    (-0.20,  1.50, 1.00),
+]
 
-goal = space.allocState()
-goal[0] = 1.5
-goal[1] = 1.5
-goal[2] = 2.0
+# 10 goal positions
+goal_positions = [
+    ( 1.70,  1.70, 2.80),
+    ( 1.70,  1.20, 2.70),
+    ( 1.70,  0.70, 2.60),
+    ( 1.70,  0.20, 2.50),
+    ( 1.70, -0.30, 2.40),
+    ( 1.70, -0.80, 2.30),
+    ( 1.70, -1.10, 2.20),
+    ( 1.20, -1.50, 2.10),
+    ( 0.70, -1.50, 2.00),
+    ( 0.20, -1.50, 1.90),
+]
+
+def generate_circle_crossing(num_drones=20, radius=1.5, z=0.7):
+    sequences = ([],[])
+
+    for i in range(num_drones):
+        theta = 2 * np.pi * i / num_drones
+
+        start = (
+            radius * np.cos(theta),
+            radius * np.sin(theta),
+            z
+        )
+
+        end = (
+            -start[0],
+            -start[1],
+            z
+        )
+
+        sequences = (sequences[0] + [start], sequences[1] + [end])
+
+    return sequences
+
+
+start_positions, goal_positions = generate_circle_crossing(10)
+
+start = ss.getStateSpace().allocState()
+goal = ss.getStateSpace().allocState()
+
+for i in range(NUM_DRONES):
+    start[i][0] = start_positions[i][0]
+    start[i][1] = start_positions[i][1]
+    start[i][2] = start_positions[i][2]
+
+    goal[i][0] = goal_positions[i][0]
+    goal[i][1] = goal_positions[i][1]
+    goal[i][2] = goal_positions[i][2]
 
 ss.setStartAndGoalStates(start, goal)
 
+
+
 # ----------------------------
-# 4. Planner
+# 4. Planner RRT*
 # ----------------------------
-planner = og.RRTstar(si)
-planner.setRange(0.2)
-planner.setGoalBias(0.05)
-ss.setPlanner(planner)
+planner_rrt = og.RRTstar(si)
+planner_rrt.setRange(0.2)
+planner_rrt.setGoalBias(0.05)
+ss.setPlanner(planner_rrt)
+
+# ----------------------------
+# 4. Planner A*
+# ----------------------------
+planner_A_Star = og.AStar(si)
+ss.setPlanner(planner_A_Star)
+
 
 # ----------------------------
 # 5. Solve
 # ----------------------------
-solved = ss.solve(2.0) # Allow up to 1 second to find a solution
+solved = ss.solve(2.0) # Allow up to 2 second to find a solution
 
 if solved:
     ss.simplifySolution()   # ← IMPORTANT
@@ -83,25 +162,41 @@ if solved:
     """ for state in states:
         print(state[0], state[1]) """
 
-    x_vals = [state[0] for state in states]
-    y_vals = [state[1] for state in states]
-    z_vals = [state[2] for state in states]
+    drone_paths = [[] for _ in range(NUM_DRONES)]
+
+    for state in states:
+        for i in range(NUM_DRONES):
+            x = state[i][0]
+            y = state[i][1]
+            z = state[i][2]
+            drone_paths[i].append((x, y, z))
+
+    import json
+
+    output_data = {
+        "num_drones": NUM_DRONES,
+        "paths": drone_paths
+    }
+
+    with open("drone_paths.json", "w") as f:
+        json.dump(output_data, f, indent=2)
+
+    print("Saved paths to drone_paths.json")
+
 
     fig = plt.figure()
 
     
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot(x_vals, y_vals, z_vals, label='RRT* Path')
-    # plot the ball obstacle
-    u = np.linspace(0, 2 * np.pi, 100)
-    v = np.linspace(0, np.pi, 100)
-    x = 1.5 * np.outer(np.cos(u), np.sin(v))
-    y = 1.5 * np.outer(np.sin(u), np.sin(v))
-    z = 1.5 * np.outer(np.ones(np.size(u)), np.cos(v))
-    ax.plot_surface(x, y, z, color='r', alpha=0.5)
+    for i in range(NUM_DRONES):
+        x_vals = [p[0] for p in drone_paths[i]]
+        y_vals = [p[1] for p in drone_paths[i]]
+        z_vals = [p[2] for p in drone_paths[i]]
 
-    ax.scatter(start[0], start[1], start[2], color='green', label='Start')
-    ax.scatter(goal[0], goal[1], goal[2], color='red', label='Goal')
+        ax.plot(x_vals, y_vals, z_vals, label=f'Drone {i+1} Path')
+        ax.scatter(x_vals[0], y_vals[0], z_vals[0], marker='o')
+        ax.scatter(x_vals[-1], y_vals[-1], z_vals[-1], marker='x')
+
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
@@ -120,3 +215,7 @@ if solved:
     del goal
 else:
     print("No solution found")
+
+
+
+

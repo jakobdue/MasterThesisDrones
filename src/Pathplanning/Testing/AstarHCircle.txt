@@ -1,0 +1,6 @@
+A* Benchmark Results
+====================
+
+Drones: 1, Steps: 1, Time: 0.000 s, Average length: 0.00
+
+Maximum number of drones: 1

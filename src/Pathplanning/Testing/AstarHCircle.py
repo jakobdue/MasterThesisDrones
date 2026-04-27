@@ -17,19 +17,65 @@ A-star implementeted with LLM chatGPT
 RESULTS_FILE = "AstarHCircle.txt"
 
 
+import math
+
 def generate_circle_crossing(num_drones, radius=3, z=1):
-    points = []
+    """
+    Returns n pairs of points (start, end).
+    Each pair defines a diameter of the circle.
+    All paths intersect exactly at the center.
+    Works for any n (odd or even).
+    """
 
-    for i in range(num_drones):
-        theta = 2 * np.pi * i / num_drones
-        x = int(round(radius * np.cos(theta)))
-        y = int(round(radius * np.sin(theta)))
-        points.append((x, y, z))
 
-    starts = points
-    goals = points[1:] + [points[0]]  # shift by 1 → cycle
+    if num_drones <= 0:
+        return []
 
-    return list(zip(starts, goals))
+    # Collect integer points close to the circle boundary
+    boundary_points = []
+
+    for x in range(-radius, radius + 1):
+        for y in range(-radius, radius + 1):
+            dist = math.sqrt(x * x + y * y)
+
+            # Accept points near the circle edge
+            if abs(dist - radius) <= 0.75:
+                boundary_points.append((x, y, z))
+
+    # Sort points by angle around the circle
+    boundary_points.sort(key=lambda p: math.atan2(p[1], p[0]))
+
+    if len(boundary_points) < 2 * num_drones:
+        raise ValueError(
+            f"Not enough unique circle boundary points for {num_drones} drones. "
+            f"Increase radius. Need {2 * num_drones}, got {len(boundary_points)}."
+        )
+
+    pairs = []
+    used = set()
+
+    half = len(boundary_points) // 2
+
+    for i in range(len(boundary_points)):
+        if len(pairs) >= num_drones:
+            break
+
+        start = boundary_points[i]
+        goal = boundary_points[(i + half) % len(boundary_points)]
+
+        if start not in used and goal not in used and start != goal:
+            pairs.append((start, goal))
+            used.add(start)
+            used.add(goal)
+
+    if len(pairs) < num_drones:
+        raise ValueError(
+            f"Could only generate {len(pairs)} unique start/end pairs. "
+            f"Increase radius."
+        )
+
+    return pairs
+
 
 
 # 3D Grid Limits
@@ -249,5 +295,11 @@ if __name__ == "__main__":
 
         f.write("\n")
         f.write(f"Maximum number of drones: {last_successful_num_drones}\n")
+    
+    # Plot the last successful paths
+    if last_successful_path is not None:
+        plot_paths(last_successful_path)
+
+    
 
     print(f"Results saved to {RESULTS_FILE}")

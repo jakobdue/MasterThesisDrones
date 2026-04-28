@@ -83,7 +83,7 @@ X_MIN, X_MAX = -5, 5
 Y_MIN, Y_MAX = -5, 5
 Z_MIN, Z_MAX = 0, 9
 
-TIME_LIMIT_SECONDS = 10
+TIME_LIMIT_SECONDS = 15
 
 class AStar3D:
     def __init__(self, obstacles: Set[Tuple[int, int, int]]):

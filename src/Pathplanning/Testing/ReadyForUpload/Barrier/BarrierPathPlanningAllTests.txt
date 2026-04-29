@@ -1,0 +1,54 @@
+Barrier pathplanning Benchmark Results with time limit: 15 seconds
+====================================================
+
+Gradient check results:
+First single run with full gradient check none and 1 obstacle:
+Gradient error (no obstacles): 5.136423e-03
+Gradient error (with obstacle): 5.136423e-03
+
+Average gradient check results over 100 runs:
+FULL: 6.206846e-02
+PATH: 1.692310e-06
+BARRIER: 2.053325e-03
+DIVERSION: 1.154239e-07
+OBSTACLE: 2.469058e-02
+====================================================
+
+
+Barrier pathplanning results: Missions:
+Results for original missions, 4 drones:
+Drones: 4, Steps: 10, Time: 0.029 s, Mission: OG, Average length: 2.46
+Drones: 4, Steps: 10, Time: 0.016 s, Mission: Cross, Average length: 1.70
+
+
+Barrier Path Planning: Circle crossing:
+Drones: 1, Steps: 10, Time: 0.001 s, Average length: 1.20
+Drones: 2, Steps: 10, Time: 0.007 s, Average length: 1.20
+Drones: 3, Steps: 10, Time: 0.020 s, Average length: 1.20
+Drones: 4, Steps: 10, Time: 0.037 s, Average length: 1.20
+Drones: 5, Steps: 10, Time: 0.044 s, Average length: 1.20
+Drones: 6, Steps: 10, Time: 0.148 s, Average length: 1.20
+Drones: 7, Steps: 10, Time: 0.629 s, Average length: 1.25
+Drones: 8, Steps: 10, Time: 0.755 s, Average length: 1.27
+Drones: 9, Steps: 10, Time: 1.347 s, Average length: 1.27
+Drones: 10, Steps: 10, Time: 2.142 s, Average length: 1.28
+Drones: 11, Steps: 10, Time: 1.060 s, Average length: 1.29
+Drones: 12, Steps: 10, Time: 3.603 s, Average length: 1.30
+Drones: 13, Steps: 10, Time: 2.125 s, Average length: 1.32
+Drones: 14, Steps: 10, Time: 1.784 s, Average length: 1.30
+
+Maximum number of drones: 14
+Stopped due to time limit of 15 seconds.
+
+
+Barrier Path Planning results: Random missions:
+Total successful paths found: 564
+Average path length across successful runs: 1.14
+
+
+Barrier Path Planning results: Random obstacles:
+Max number of obstacles solved within 15 seconds: 54
+Average path length for all successful runs: 2.61
+Every tenth path plotted in ObstaclesFiguresBarrier/ as Barrier_path_i.png
+Stopped due to time limit
+

@@ -3,52 +3,65 @@ Barrier pathplanning Benchmark Results with time limit: 15 seconds
 
 Gradient check results:
 First single run with full gradient check none and 1 obstacle:
-Gradient error (no obstacles): 5.136423e-03
-Gradient error (with obstacle): 5.136423e-03
+Gradient error (no obstacles): 5.034661e-03
+Gradient error (with obstacle): 5.034661e-03
 
 Average gradient check results over 100 runs:
-FULL: 6.206846e-02
-PATH: 1.692310e-06
-BARRIER: 2.053325e-03
+FULL: 2.191373e-02
+PATH: 1.716587e-06
+BARRIER: 2.672759e-04
 DIVERSION: 1.154239e-07
-OBSTACLE: 2.469058e-02
+OBSTACLE: 1.977774e-02
 ====================================================
 
 
 Barrier pathplanning results: Missions:
 Results for original missions, 4 drones:
 Drones: 4, Steps: 10, Time: 0.029 s, Mission: OG, Average length: 2.46
-Drones: 4, Steps: 10, Time: 0.016 s, Mission: Cross, Average length: 1.70
+Drones: 4, Steps: 10, Time: 0.015 s, Mission: Cross, Average length: 1.70
 
 
 Barrier Path Planning: Circle crossing:
-Drones: 1, Steps: 10, Time: 0.001 s, Average length: 1.20
-Drones: 2, Steps: 10, Time: 0.007 s, Average length: 1.20
-Drones: 3, Steps: 10, Time: 0.020 s, Average length: 1.20
-Drones: 4, Steps: 10, Time: 0.037 s, Average length: 1.20
-Drones: 5, Steps: 10, Time: 0.044 s, Average length: 1.20
-Drones: 6, Steps: 10, Time: 0.148 s, Average length: 1.20
-Drones: 7, Steps: 10, Time: 0.629 s, Average length: 1.25
-Drones: 8, Steps: 10, Time: 0.755 s, Average length: 1.27
-Drones: 9, Steps: 10, Time: 1.347 s, Average length: 1.27
-Drones: 10, Steps: 10, Time: 2.142 s, Average length: 1.28
-Drones: 11, Steps: 10, Time: 1.060 s, Average length: 1.29
-Drones: 12, Steps: 10, Time: 3.603 s, Average length: 1.30
-Drones: 13, Steps: 10, Time: 2.125 s, Average length: 1.32
-Drones: 14, Steps: 10, Time: 1.784 s, Average length: 1.30
+Drones: 1, Steps: 10, Time: 0.001 s, Average length: 12.00
+Drones: 2, Steps: 10, Time: 0.001 s, Average length: 12.00
+Drones: 3, Steps: 10, Time: 0.001 s, Average length: 12.00
+Drones: 4, Steps: 10, Time: 0.002 s, Average length: 12.00
+Drones: 5, Steps: 10, Time: 0.002 s, Average length: 12.00
+Drones: 6, Steps: 10, Time: 0.003 s, Average length: 12.00
+Drones: 7, Steps: 10, Time: 0.004 s, Average length: 12.00
+Drones: 8, Steps: 10, Time: 0.004 s, Average length: 12.00
+Drones: 9, Steps: 10, Time: 0.005 s, Average length: 12.00
+Drones: 10, Steps: 10, Time: 0.007 s, Average length: 12.00
+Drones: 11, Steps: 10, Time: 0.029 s, Average length: 12.00
+Drones: 12, Steps: 10, Time: 0.121 s, Average length: 12.00
+Drones: 13, Steps: 10, Time: 0.220 s, Average length: 12.00
+Drones: 14, Steps: 10, Time: 0.282 s, Average length: 12.00
+Drones: 15, Steps: 10, Time: 0.272 s, Average length: 12.00
+Drones: 16, Steps: 10, Time: 0.343 s, Average length: 12.00
+Drones: 17, Steps: 10, Time: 0.422 s, Average length: 12.00
+Drones: 18, Steps: 10, Time: 0.549 s, Average length: 12.00
+Drones: 19, Steps: 10, Time: 1.259 s, Average length: 12.00
+Drones: 20, Steps: 10, Time: 0.898 s, Average length: 12.00
+Drones: 21, Steps: 10, Time: 0.742 s, Average length: 12.01
+Drones: 22, Steps: 10, Time: 1.582 s, Average length: 12.01
+Drones: 23, Steps: 10, Time: 1.339 s, Average length: 12.01
+Drones: 24, Steps: 10, Time: 0.860 s, Average length: 12.01
+Drones: 25, Steps: 10, Time: 1.733 s, Average length: 12.01
+Drones: 26, Steps: 10, Time: 1.340 s, Average length: 12.01
+Drones: 27, Steps: 10, Time: 1.584 s, Average length: 12.01
 
-Maximum number of drones: 14
+Maximum number of drones: 27
 Stopped due to time limit of 15 seconds.
 
 
 Barrier Path Planning results: Random missions:
-Total successful paths found: 564
+Total successful paths found: 560
 Average path length across successful runs: 1.14
 
 
 Barrier Path Planning results: Random obstacles:
-Max number of obstacles solved within 15 seconds: 54
-Average path length for all successful runs: 2.61
+Max number of obstacles solved within 15 seconds: 60
+Average path length for all successful runs: 2.58
 Every tenth path plotted in ObstaclesFiguresBarrier/ as Barrier_path_i.png
 Stopped due to time limit
 

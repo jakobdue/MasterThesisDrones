@@ -18,7 +18,7 @@ type Path  = list[Point] # points is a list of tuples with (x,y,z) coordinates.
 # ----------------------------
 TIME_LIMIT_SECONDS = 15
 RESULTS_FILE = "BarrierPathPlanningAllTests.txt"
-CIRCLE_RADIUS = 3/5
+CIRCLE_RADIUS = 30/5
 PLOT_OBSTACLE = False
 
 random.seed(42)  # For reproducibility
@@ -110,7 +110,7 @@ def update_random_obstacles(num_obstacles, start, goal):
     # Also check that the time does not run out 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while len(obstacles) < num_obstacles:
-        obs = (random.randint(X_MIN + 1, X_MAX - 1), random.randint(Y_MIN + 1, Y_MAX - 1), random.randint(Z_MIN + 1, Z_MAX - 1))
+        obs = (random.randint(X_MIN, X_MAX), random.randint(Y_MIN, Y_MAX), random.randint(Z_MIN, Z_MAX))
         # Check that the generated obstacle is not start nor goal:
         if obs in start or obs in goal:
             continue
@@ -692,6 +692,8 @@ def Barrier_Increasing_Obstacles():
             ax.set_ylabel('Y')
             ax.set_zlabel('Z')
             ax.legend()
+            if i % 20 == 0 and PLOT_OBSTACLE: 
+                plt.show()
             plt.savefig(f'ObstaclesFiguresBarrier/Barrier_path_{i}.png')
             plt.close()
         

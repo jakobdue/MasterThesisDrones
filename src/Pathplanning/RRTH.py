@@ -77,13 +77,20 @@ Z_MIN, Z_MAX = 0, 9
 # ----------------------------
 # RRT* tuning
 # ----------------------------
-STEP_SIZE = 1.0                 # steering step in workspace units
-MAX_ITER = 3000                 # iterations per mission
+STEP_SIZE = 0.5                 # steering step in workspace units
+MAX_ITER = 100000               # iterations per mission
 GOAL_SAMPLE_RATE = 0.20         # probability of sampling the goal
 GOAL_REGION_RADIUS = 1.2        # goal reached threshold (workspace units)
 SEARCH_RADIUS = 2.5             # neighbor radius for choosing parent/rewire
 
-SAFETY_RADIUS_CELLS = 1         # inflate obstacles by this many grid cells (0 = off)
+SAFETY_RADIUS_CELLS = 0         # inflate obstacles by this many grid cells (0 = off)
+
+# ---- convergence parameters ----
+EPSILON = 0.01          # 1% improvement threshold
+MAX_NO_IMPROVE = 3     # stop after this many small improvements
+no_improve_counter = 0
+# ---- convergence parameters ----
+MAX_STALL_ITERS = 500    # stop if no meaningful improvement for this many iterations
 
 
 # ----------------------------
@@ -253,8 +260,7 @@ class RRTStar3D:
                 dedup.append(p)
         return dedup
 
-    def plan(self) -> Optional[List[Tuple[int, int, int]]]:
-        # ensure start/goal are free (except they might be in "local obstacles" outside)
+    def plan(self, time_limit=None) -> Optional[List[Tuple[int, int, int]]]:
         if not self.is_point_free(self.start.pos()):
             print("Start in collision:", round_cell(self.start.pos()))
             return None
@@ -262,15 +268,27 @@ class RRTStar3D:
             print("Goal in collision:", round_cell(self.goal.pos()))
             return None
 
-        best_goal_node: Optional[Node] = None
+        best_goal_node = None
         best_goal_cost = float("inf")
 
+        EPSILON = 0.01
+        MAX_STALL_ITERS = 500
+
+        iters_since_improvement = 0
+        first_solution_found = False
+
+        deadline = time.perf_counter() + time_limit if time_limit is not None else None
+
         for _ in range(MAX_ITER):
+
+            if deadline is not None and time.perf_counter() > deadline:
+                print("Time limit reached, stopping planning.")
+                break
+
             rand = self.get_random_node()
             nearest = self.get_nearest_node(rand)
             new = self.steer(nearest, rand)
 
-            # clamp to bounds (continuous)
             new.x = clamp(new.x, X_MIN, X_MAX)
             new.y = clamp(new.y, Y_MIN, Y_MAX)
             new.z = clamp(new.z, Z_MIN, Z_MAX)
@@ -283,18 +301,42 @@ class RRTStar3D:
             self.node_list.append(new)
             self.rewire(new, neighbors)
 
+            improved = False
+
             if self.reached_goal(new):
-                # connect to exact goal if possible
                 if self.is_segment_free(new.pos(), self.goal.pos()):
                     goal_node = Node(self.goal.x, self.goal.y, self.goal.z)
                     goal_node.parent = new
                     goal_node.cost = new.cost + math.dist(new.pos(), self.goal.pos())
+
                     if goal_node.cost < best_goal_cost:
+                        if best_goal_cost < float("inf"):
+                            improvement = (best_goal_cost - goal_node.cost) / best_goal_cost
+                        else:
+                            improvement = 1.0
+
                         best_goal_cost = goal_node.cost
                         best_goal_node = goal_node
+                        first_solution_found = True
+
+                        if improvement >= EPSILON:
+                            improved = True
+
+            # ---- global stall tracking ----
+            if first_solution_found:
+                if improved:
+                    iters_since_improvement = 0
+                else:
+                    iters_since_improvement += 1
+
+            # ---- stopping ----
+            if first_solution_found and iters_since_improvement >= MAX_STALL_ITERS:
+                #print("Converged: stopping early.")
+                break
 
         if best_goal_node is None:
             return None
+
         return self.generate_final_path(best_goal_node)
 
 
@@ -302,12 +344,20 @@ class RRTStar3D:
 # Multi-mission planning (RRT*)
 # ----------------------------
 def plan_multiple_paths_rrtstar(
-    pairs: List[Tuple[Tuple[int, int, int], Tuple[int, int, int]]]
-) -> List[Optional[List[Tuple[int, int, int]]]]:
+    pairs: List[Tuple[Tuple[int, int, int], Tuple[int, int, int]]],time_limit = None
+    ) -> List[Optional[List[Tuple[int, int, int]]]]:
     obstacles: Set[Tuple[int, int, int]] = set()
     all_paths: List[Optional[List[Tuple[int, int, int]]]] = []
 
+    deanline = time.perf_counter() + time_limit if time_limit is not None else None
+    time_per_drone = None
+    if time_limit is not None:
+        time_per_drone = time_limit / len(pairs)
     for start, goal in pairs:
+        if deanline is not None and time.perf_counter() > deanline:
+            print("Overall time limit reached, stopping further planning.")
+            all_paths.append(None)
+            continue
         # local obstacles: other starts/goals
         local_obstacles = set()
         for s2, g2 in pairs:
@@ -316,7 +366,7 @@ def plan_multiple_paths_rrtstar(
                 local_obstacles.add(g2)
 
         planner = RRTStar3D(start, goal, obstacles.union(local_obstacles))
-        path = planner.plan()
+        path = planner.plan(time_limit=time_per_drone)
 
         if path is None:
             print(f"No path found for {start} -> {goal}")

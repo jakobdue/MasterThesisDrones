@@ -12,7 +12,7 @@ import numpy as np
 # ----------------------------
 NUM_DRONES = 10
 MIN_SEPARATION = 0.3
-lanning_algorithm = "RRT*"
+planning_algorithm = "RRT*"
 
 def create_drone_space():
     drone_space = ob.RealVectorStateSpace(3)
@@ -138,13 +138,6 @@ planner_rrt = og.RRTstar(si)
 planner_rrt.setRange(0.2)
 planner_rrt.setGoalBias(0.05)
 ss.setPlanner(planner_rrt)
-
-# ----------------------------
-# 4. Planner A*
-# ----------------------------
-planner_A_Star = og.AStar(si)
-ss.setPlanner(planner_A_Star)
-
 
 # ----------------------------
 # 5. Solve

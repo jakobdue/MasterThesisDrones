@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Load data
-with open("drone_paths.json", "r") as f:
+with open("ompl_circle_paths.json", "r") as f:
     data = json.load(f)
 
 NUM_DRONES = data["num_drones"]

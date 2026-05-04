@@ -58,3 +58,10 @@ Barrier Path Planning results: Random missions:
 Total successful paths found: 410
 Average path length across successful runs: 1.14
 
+
+Barrier Path Planning results: Random obstacles:
+Max number of obstacles solved within 15 seconds: 48
+Average path length for all successful runs: 2.56
+Every tenth path plotted in ObstaclesFiguresBarrier/ as Barrier_path_i.png
+Stopped due to time limit
+

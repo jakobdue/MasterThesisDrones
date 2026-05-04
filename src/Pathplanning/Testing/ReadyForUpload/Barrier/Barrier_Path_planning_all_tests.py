@@ -20,6 +20,7 @@ TIME_LIMIT_SECONDS = 15
 RESULTS_FILE = "BarrierPathPlanningAllTests.txt"
 CIRCLE_RADIUS = 30/5
 PLOT_OBSTACLE = False
+PLOT = True
 
 random.seed(42)  # For reproducibility
 
@@ -478,6 +479,7 @@ def Barrier_Circle_crossing():
     last_successful_num_drones = 0
     reason_for_failure = ""
     results = []
+    paths = []
 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
@@ -512,6 +514,7 @@ def Barrier_Circle_crossing():
 
         new_paths = unflatten_paths(res.x, len(drones))
         avg_length = compute_average_path_length(new_paths)
+        paths.append(new_paths)
         results.append({
             "num_drones": num_drones,
             "steps": len(new_paths[0]),
@@ -537,6 +540,31 @@ def Barrier_Circle_crossing():
         f.write(f"Maximum number of drones: {last_successful_num_drones}\n")
         f.write(f"{reason_for_failure}")
         f.write("\n\n")
+    
+    #plot and save all paths in folder CircleCrossingFiguresBarrier/ as Circle_crossing_i.png and make sure that the bounds of the plot is 10X10X10 
+    if PLOT:
+        for i, paths in enumerate(paths):
+            fig = plt.figure()
+            ax = fig.add_subplot(111, projection='3d')
+            for j, path in enumerate(paths):
+                x, y, z = zip(*path)
+                ax.plot(x, y, z, label=f'Drone {j+1}')
+                ax.scatter(x[0], y[0], z[0], marker='o')  # Start point
+                ax.scatter(x[-1], y[-1], z[-1], marker='x')  # End point
+
+            ax.set_title(f'Barrier Circle Crossing with {results[i]["num_drones"]} Drones')
+            ax.set_xlabel('X')
+            ax.set_ylabel('Y')
+            ax.set_zlabel('Z')
+            ax.set_xlim(-10, 10)
+            ax.set_ylim(-10, 10)
+            ax.set_zlim(0, 2)
+            ax.legend()
+            plt.savefig(f"CircleFiguresBarrier/Circle_crossing_{results[i]['num_drones']}.png")
+            plt.show()
+        
+
+
 
 
 # ----------------------------

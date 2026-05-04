@@ -360,7 +360,7 @@ class AStar3D:
             path.append(current)
         return path[::-1]
 
-def plan_multiple_paths(pairs: List[Tuple[Tuple[int, int, int],
+def plan_multiple_paths(pairs: list[Tuple[Tuple[int, int, int],
                                            Tuple[int, int, int]]], 
                         obstacles_in: Set[Tuple[int, int, int]] = None):
 

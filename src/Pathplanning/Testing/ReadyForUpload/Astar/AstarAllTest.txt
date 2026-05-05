@@ -1,96 +1,120 @@
-A* Benchmark Results with time limit: 5 seconds
+A* Benchmark Results with time limit: 60 seconds
 ================================================
 
 
 Joint A* results: Missions:
 Results for original missions, 4 drones:
-Drones: 4, Steps: 21, Time: 0.122 s, Mission: OG, Average length: 3.20
-Drones: 4, Steps: 13, Time: 0.075 s, Mission: Cross, Average length: 2.40
+Drones: 4, Steps: 21, Time: 0.153 s, Mission: OG, Average length: 3.20
+Drones: 4, Steps: 13, Time: 0.070 s, Mission: Cross, Average length: 2.40
 Failed runs: 0
 
 Hirachical A* results: Missions:
 Results for original missions, 4 drones:
-Drones: 4, Steps: .., Time: 0.000 s, Mission: OG, Average length: 4.00
-Drones: 4, Steps: .., Time: 0.000 s, Mission: Cross, Average length: 2.40
+Drones: 4, Steps: 21, Time: 0.000 s, Mission: OG, Average length: 4.00
+Drones: 4, Steps: 13, Time: 0.000 s, Mission: Cross, Average length: 2.40
 Failed runs: 0
 
 Joint A* results: Circle crossing:
 Drones: 1, Steps: 63, Time: 0.002 s, Average length: 12.40
-Drones: 2, Steps: 63, Time: 0.007 s, Average length: 12.40
-Drones: 3, Steps: 83, Time: 0.087 s, Average length: 14.93
-Drones: 4, Steps: 87, Time: 0.927 s, Average length: 14.80
+Drones: 2, Steps: 63, Time: 0.008 s, Average length: 12.40
+Drones: 3, Steps: 83, Time: 0.101 s, Average length: 14.93
+Drones: 4, Steps: 87, Time: 0.952 s, Average length: 14.80
+Drones: 5, Steps: 85, Time: 8.474 s, Average length: 15.36
 
-Maximum number of drones: 4
+Maximum number of drones: 5
 failed due to time limit
 Failed runs: 1
 
 
 Hirachical A* results: Circle crossing:
-Drones: 1, Steps: 1, Time: 0.001 s, Average length: 12.40
-Drones: 2, Steps: 2, Time: 0.001 s, Average length: 12.60
-Drones: 3, Steps: 3, Time: 0.014 s, Average length: 15.20
-Drones: 4, Steps: 4, Time: 0.018 s, Average length: 15.10
-Drones: 5, Steps: 5, Time: 0.026 s, Average length: 15.68
-Drones: 6, Steps: 6, Time: 0.030 s, Average length: 15.27
-Drones: 7, Steps: 7, Time: 0.037 s, Average length: 15.66
-Drones: 8, Steps: 8, Time: 0.047 s, Average length: 15.60
-Drones: 9, Steps: 9, Time: 0.062 s, Average length: 15.78
-Drones: 10, Steps: 10, Time: 0.069 s, Average length: 15.80
-Drones: 11, Steps: 11, Time: 0.083 s, Average length: 15.89
-Drones: 12, Steps: 12, Time: 0.085 s, Average length: 15.73
-Drones: 13, Steps: 13, Time: 0.122 s, Average length: 15.88
-Drones: 14, Steps: 14, Time: 0.101 s, Average length: 15.80
-Drones: 15, Steps: 15, Time: 0.111 s, Average length: 15.89
-Drones: 16, Steps: 16, Time: 0.116 s, Average length: 15.80
-Drones: 17, Steps: 17, Time: 0.126 s, Average length: 15.88
-Drones: 18, Steps: 18, Time: 0.133 s, Average length: 15.84
-Drones: 19, Steps: 19, Time: 0.143 s, Average length: 15.94
-Drones: 20, Steps: 20, Time: 0.150 s, Average length: 15.88
-Drones: 21, Steps: 21, Time: 0.164 s, Average length: 15.85
-Drones: 22, Steps: 22, Time: 0.162 s, Average length: 15.95
-Drones: 23, Steps: 23, Time: 0.162 s, Average length: 15.86
-Drones: 24, Steps: 24, Time: 0.171 s, Average length: 15.88
-Drones: 25, Steps: 25, Time: 0.174 s, Average length: 15.90
-Drones: 26, Steps: 26, Time: 0.189 s, Average length: 15.92
-Drones: 27, Steps: 27, Time: 0.194 s, Average length: 15.90
-Drones: 28, Steps: 28, Time: 0.199 s, Average length: 15.97
-Drones: 29, Steps: 29, Time: 0.204 s, Average length: 15.89
-Drones: 30, Steps: 30, Time: 0.217 s, Average length: 15.96
-Drones: 31, Steps: 31, Time: 0.215 s, Average length: 15.96
-Drones: 32, Steps: 32, Time: 0.226 s, Average length: 15.90
-Drones: 33, Steps: 33, Time: 0.228 s, Average length: 15.95
-Drones: 34, Steps: 34, Time: 0.239 s, Average length: 15.94
-Drones: 35, Steps: 35, Time: 0.259 s, Average length: 16.02
-Drones: 36, Steps: 36, Time: 0.256 s, Average length: 15.96
+Drones: 1, Steps: 1, Time: 0.001 s, Average length: 12.40, Room size: 10
+Drones: 2, Steps: 2, Time: 0.002 s, Average length: 12.60, Room size: 10
+Drones: 3, Steps: 3, Time: 0.024 s, Average length: 15.20, Room size: 10
+Drones: 4, Steps: 4, Time: 0.021 s, Average length: 15.10, Room size: 10
+Drones: 5, Steps: 5, Time: 0.034 s, Average length: 15.68, Room size: 10
+Drones: 6, Steps: 6, Time: 0.036 s, Average length: 15.27, Room size: 10
+Drones: 7, Steps: 7, Time: 0.044 s, Average length: 15.66, Room size: 10
+Drones: 8, Steps: 8, Time: 0.058 s, Average length: 15.60, Room size: 10
+Drones: 9, Steps: 9, Time: 0.076 s, Average length: 15.78, Room size: 10
+Drones: 10, Steps: 10, Time: 0.084 s, Average length: 15.80, Room size: 10
+Drones: 11, Steps: 11, Time: 0.098 s, Average length: 15.89, Room size: 10
+Drones: 12, Steps: 12, Time: 0.107 s, Average length: 15.73, Room size: 10
+Drones: 13, Steps: 13, Time: 0.119 s, Average length: 15.88, Room size: 10
+Drones: 14, Steps: 14, Time: 0.130 s, Average length: 15.80, Room size: 10
+Drones: 15, Steps: 15, Time: 0.136 s, Average length: 15.89, Room size: 10
+Drones: 16, Steps: 16, Time: 0.139 s, Average length: 15.80, Room size: 10
+Drones: 17, Steps: 17, Time: 0.162 s, Average length: 15.88, Room size: 10
+Drones: 18, Steps: 18, Time: 0.163 s, Average length: 15.84, Room size: 10
+Drones: 19, Steps: 19, Time: 0.176 s, Average length: 15.94, Room size: 10
+Drones: 20, Steps: 20, Time: 0.180 s, Average length: 15.88, Room size: 10
+Drones: 21, Steps: 21, Time: 0.184 s, Average length: 15.85, Room size: 10
+Drones: 22, Steps: 22, Time: 0.198 s, Average length: 15.95, Room size: 10
+Drones: 23, Steps: 23, Time: 0.204 s, Average length: 15.86, Room size: 10
+Drones: 24, Steps: 24, Time: 0.208 s, Average length: 15.88, Room size: 10
+Drones: 25, Steps: 25, Time: 0.211 s, Average length: 15.90, Room size: 10
+Drones: 26, Steps: 26, Time: 0.227 s, Average length: 15.92, Room size: 10
+Drones: 27, Steps: 27, Time: 0.238 s, Average length: 15.90, Room size: 10
+Drones: 28, Steps: 28, Time: 0.244 s, Average length: 15.97, Room size: 10
+Drones: 29, Steps: 29, Time: 0.247 s, Average length: 15.89, Room size: 10
+Drones: 30, Steps: 30, Time: 0.275 s, Average length: 15.96, Room size: 10
+Drones: 31, Steps: 31, Time: 0.289 s, Average length: 15.96, Room size: 10
+Drones: 32, Steps: 32, Time: 0.275 s, Average length: 15.90, Room size: 10
+Drones: 33, Steps: 33, Time: 0.290 s, Average length: 15.95, Room size: 10
+Drones: 34, Steps: 34, Time: 0.314 s, Average length: 15.94, Room size: 10
+Drones: 35, Steps: 35, Time: 0.316 s, Average length: 16.02, Room size: 10
+Drones: 36, Steps: 36, Time: 0.317 s, Average length: 15.96, Room size: 10
+Drones: 37, Steps: 37, Time: 0.322 s, Average length: 15.97, Room size: 10
+Drones: 38, Steps: 38, Time: 0.374 s, Average length: 16.12, Room size: 10
+Drones: 39, Steps: 39, Time: 0.332 s, Average length: 15.97, Room size: 10
+Drones: 40, Steps: 40, Time: 0.394 s, Average length: 16.08, Room size: 10
+Drones: 41, Steps: 41, Time: 0.457 s, Average length: 16.18, Room size: 10
+Drones: 42, Steps: 42, Time: 1.484 s, Average length: 31.18, Room size: 20
+Drones: 43, Steps: 43, Time: 1.452 s, Average length: 31.21, Room size: 20
+Drones: 44, Steps: 44, Time: 1.514 s, Average length: 31.16, Room size: 20
+Drones: 45, Steps: 45, Time: 1.484 s, Average length: 31.16, Room size: 20
+Drones: 46, Steps: 46, Time: 1.560 s, Average length: 31.21, Room size: 20
+Drones: 47, Steps: 47, Time: 1.571 s, Average length: 31.19, Room size: 20
+Drones: 48, Steps: 48, Time: 1.629 s, Average length: 31.23, Room size: 20
+Drones: 49, Steps: 49, Time: 1.639 s, Average length: 31.26, Room size: 20
+Drones: 50, Steps: 50, Time: 1.674 s, Average length: 31.19, Room size: 20
+Drones: 51, Steps: 51, Time: 1.691 s, Average length: 31.19, Room size: 20
+Drones: 52, Steps: 52, Time: 1.751 s, Average length: 31.26, Room size: 20
+Drones: 53, Steps: 53, Time: 1.749 s, Average length: 31.18, Room size: 20
+Drones: 54, Steps: 54, Time: 1.920 s, Average length: 31.33, Room size: 20
+Drones: 55, Steps: 55, Time: 1.814 s, Average length: 31.22, Room size: 20
+Drones: 56, Steps: 56, Time: 2.004 s, Average length: 31.29, Room size: 20
+Drones: 57, Steps: 57, Time: 1.887 s, Average length: 31.22, Room size: 20
+Drones: 58, Steps: 58, Time: 2.111 s, Average length: 31.30, Room size: 20
 
-Maximum number of drones: 36
+Maximum number of drones: 58
 failed due to time limit
-Failed runs: 1
+Failed runs: 2
 
 
 Joint A* results: Random missions:
-Total successful paths found: 33
-Average path length across successful runs: 1.65
+Total successful paths found: 409
+Average path length across successful runs: 1.72
 Failed runs: 0
 
 
 Hirachical A* results: Random missions:
-Total successful paths found: 15009
-Average path length across successful runs: 1.71
-Failed runs: 0
+Total successful paths found: 155880
+Average path length across successful runs: 1.72
+Failed runs: 1
 
 
 Joint A* results: Random obstacles:
-Max number of obstacles solved within 5 seconds: 28
-Average path length for all successful runs: 3.63
+Max number of obstacles solved within 60 seconds: 133
+Average path length for all successful runs: 3.69
 Every tenth path plotted in ObstaclesFiguresJoint/ as joint_astar_path_i.png
 Stopped due to time limit
 Failed runs: 0
 
 
 Hirachical A* results: Random obstacles:
-Max number of obstacles solved within 5 seconds: 681
+Max number of obstacles solved within 60 seconds: 713
+Average path length for all successful runs: 4.20
 Every tenth path plotted in ObstaclesFiguresHirachical/ as Hirachical_astar_path_i.png
 Stopped due to time limit
-Failed runs: 1837
+Failed runs: 30395
 

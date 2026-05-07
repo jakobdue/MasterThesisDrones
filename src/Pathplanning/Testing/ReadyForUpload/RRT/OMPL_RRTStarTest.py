@@ -54,12 +54,6 @@ def generate_circle_crossing(num_drones, radius=CIRCLE_RADIUS, z=0.7):
     return starts, goals
 
 def generate_circle_crossing_hierarchical(num_drones, radius=CIRCLE_RADIUS, z=1.0):
-    """
-    Generate non-overlapping start/goal pairs on a circle.
-
-    - No two drones share the same start or goal
-    - Works for both even and odd n
-    """
     radius = radius/5
     if num_drones <= 0:
         return [], []
@@ -70,7 +64,7 @@ def generate_circle_crossing_hierarchical(num_drones, radius=CIRCLE_RADIUS, z=1.
     # We distribute drones over HALF the circle
     # so we never reuse opposite pairs
     for i in range(num_drones):
-        theta = math.pi * i / num_drones   # <-- key fix (half circle)
+        theta = math.pi * i / num_drones 
 
         start = (
             radius * math.cos(theta),
@@ -88,7 +82,6 @@ def generate_circle_crossing_hierarchical(num_drones, radius=CIRCLE_RADIUS, z=1.
         goals.append(goal)
 
     return starts, goals
-
 
 def generate_random_missions(num_drones=4):
     while True:
@@ -132,7 +125,7 @@ def update_random_obstacles(num_obstacles, start, goal):
 
         obs = (obs_raw[0]/5, obs_raw[1]/5, obs_raw[2]/5)
 
-        # reject if too close to start or goal
+        # Reject if too close to start or goal
         too_close = False
         for p in start + goal:
             if math.dist(obs, p) < MIN_SEPARATION:
@@ -199,17 +192,17 @@ def obstacle_run_mission():
     return starts, goals
 
 
-
+# ----------------------------
 # Helpers
 # ----------------------------
 def positions_are_valid(positions):
-    # drone drone separation
+    # Drone drone separation
     for i in range(len(positions)):
         for j in range(i + 1, len(positions)):
             if math.dist(positions[i], positions[j]) < MIN_SEPARATION:
                 return False
             
-    # drone obstacle separation
+    # Drone obstacle separation
     for pos in positions:
         for obs in obstacles.union(local_obstacles):
             if math.dist(pos, obs) < MIN_SEPARATION:
@@ -232,7 +225,7 @@ def compute_average_path_length(drone_paths):
     return total / len(drone_paths)
 
 
-def plot_paths(drone_paths, filename,):
+def plot_paths(drone_paths, filename):
     json_filename = filename.rsplit(".", 1)[0] + ".json"
 
     data = {
@@ -431,8 +424,6 @@ def solve_ompl_rrtstar(start_positions, goal_positions):
 
         joint_path.append(joint_state)
 
-    # Keep exact start, but DO NOT force the final goal.
-    # If OMPL found an exact solution, the path should already end at the goal.
     joint_path[0] = list(start_positions)
 
     if not validate_joint_path(joint_path, steps_per_segment=50):
@@ -458,7 +449,7 @@ def solve_single_drone_rrtstar(start, goal):
     ss = og.SimpleSetup(space)
     si = ss.getSpaceInformation()
 
-    # validity: only 1 drone
+    # Validity: only 1 drone
     class SingleValidity(ob.StateValidityChecker):
         def __init__(self, si):
             super().__init__(si)
@@ -507,7 +498,7 @@ def solve_single_drone_rrtstar(start, goal):
 
     return single_path, elapsed
 
-def path_to_obstacles(path, resolution=0.05):
+def convert_path_to_obstacles(path, resolution=0.25):
     obs = set()
 
     for i in range(len(path) - 1):
@@ -539,7 +530,7 @@ def plan_multiple_paths_ompl(starts, goals):
     for i in range(len(starts)):
         start = starts[i]
         goal = goals[i]
-        # add all the other drones start and goal as local obstacles
+        # Add all the other drones start and goal as local obstacles
         local_obs = set()
         for j in range(len(starts)):
             if j != i:
@@ -552,19 +543,15 @@ def plan_multiple_paths_ompl(starts, goals):
 
         if path is None:
             print(f"No path found for drone {i}")
-            #all_paths.append(None)
-            #continue
             return None, total_time
 
         all_paths.append(path)
 
-        # IMPORTANT: add path as obstacles
-        path_obs = path_to_obstacles(path)
+        # Add path as obstacles
+        path_obs = convert_path_to_obstacles(path)
         obstacles.update(path_obs)
 
     return all_paths, total_time
-
-
 
 
 
@@ -654,7 +641,7 @@ def test_circle_scaling(results, hirachical):
     results.append("\n")
     if last_paths is not None:
         plot_paths(last_paths, "ompl_circle_paths.json")
-    update_room_size(1.0)  # reset room size after test
+    update_room_size(1.0)
 
 
 def test_random_missions(results, hirachical):
@@ -669,12 +656,11 @@ def test_random_missions(results, hirachical):
 
     while time.perf_counter() < deadline:
         starts, goals = generate_random_missions(4)
-        #starts, goals = fixed_cross_mission()  # for debugging
 
         if hirachical:
-            drone_paths, elapsed = plan_multiple_paths_ompl(starts, goals)
+            drone_paths, _ = plan_multiple_paths_ompl(starts, goals)
         else: 
-            drone_paths, elapsed = solve_ompl_rrtstar(starts, goals)
+            drone_paths, _ = solve_ompl_rrtstar(starts, goals)
 
         if drone_paths is None:
             fails += 1
@@ -708,7 +694,6 @@ def test_random_missions(results, hirachical):
 
 def test_obstacles_scaling(results, mission, hirachical):
     update_random_obstacles(0, [], [])
-    num_drones = 4
     successes = 0
     fails = 0
     num_obstacles = 1
@@ -735,11 +720,13 @@ def test_obstacles_scaling(results, mission, hirachical):
         
         
         local_results.append((drone_paths, local_obs, elapsed))
-        successes += 1
+        
         
         if deadline - time.perf_counter() <= 0:
             print(f"No more solutions can be found within the time limit of {TIME_LIMIT_SECONDS} seconds.")
             break
+
+        successes += 1
 
         avg_length = compute_average_path_length(drone_paths)        
         lenghts.append(avg_length)
@@ -750,10 +737,12 @@ def test_obstacles_scaling(results, mission, hirachical):
         results.append(f"Test: random obstacles, hirachical")
     else:
         results.append(f"Test: random obstacles, Joint")
+    
+    avg_path_length = sum(lenghts) / len(lenghts) if lenghts else 0.0
     results.append(
         f"Max number of obstacles solved within {TIME_LIMIT_SECONDS} seconds: {num_obstacles - 1}"
         f"\nTotal successes: {successes}, fails: {fails}"
-        #f"Average path length for all successful runs: {sum(lenghts) / len(lenghts):.2f}\n" 
+        f"\nAverage path length for all successful runs: {avg_path_length:.2f}\n" 
     )
     
     if new_obstacles_generated:
@@ -762,7 +751,7 @@ def test_obstacles_scaling(results, mission, hirachical):
         results.append("Stopped due to space limit, could not generate more unique obstacles\n")
     results.append("\n")
         
-    # plot every solution with obstacles
+    # Plot of every solution with obstacles
     for i, (paths, obstacles, elapsed) in enumerate(local_results):
         if paths is None:
             continue
@@ -780,9 +769,6 @@ def test_obstacles_scaling(results, mission, hirachical):
             json.dump(data, f, indent=4)
 
         print(f"Path and obstacle data saved to {filename}")
-
-
-
 
 
 

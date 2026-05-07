@@ -3,61 +3,60 @@ Barrier pathplanning Benchmark Results with time limit: 60 seconds
 
 Gradient check results:
 First single run with full gradient check none and 1 obstacle:
-Gradient error (no obstacles): 6.259804e-04
-Gradient error (with obstacle): 6.259804e-04
+Gradient error (no obstacles): 6.260493e-04
+Gradient error (with obstacle): 6.260493e-04
 
 Average gradient check results over 100 runs:
-FULL: 2.824520e-03
-PATH: 1.707716e-06
-BARRIER: 2.995477e-05
+FULL: 2.468024e-03
+PATH: 1.716036e-06
+BARRIER: 2.995480e-05
 DIVERSION: 1.282488e-08
-OBSTACLE: 2.337416e-03
+OBSTACLE: 1.976185e-03
 ====================================================
 
 
 Barrier pathplanning results: Missions:
 Results for original missions, 4 drones:
-Drones: 4, Steps: 10, Time: 0.031 s, Mission: OG, Average length: 2.45
-Drones: 4, Steps: 10, Time: 0.024 s, Mission: Cross, Average length: 1.70
+Drones: 4, Steps: 10, Time: 0.040 s, Mission: OG, Average length: 2.45
+Drones: 4, Steps: 10, Time: 0.029 s, Mission: Cross, Average length: 1.70
 
 
 Barrier Path Planning: Circle crossing:
 Drones: 1, Steps: 35, Time: 0.001 s, Average length: 12.00
-Drones: 2, Steps: 35, Time: 0.014 s, Average length: 12.00
-Drones: 3, Steps: 35, Time: 0.106 s, Average length: 12.00
-Drones: 4, Steps: 35, Time: 0.064 s, Average length: 12.00
-Drones: 5, Steps: 35, Time: 0.486 s, Average length: 12.00
-Drones: 6, Steps: 35, Time: 0.660 s, Average length: 12.00
-Drones: 7, Steps: 35, Time: 0.258 s, Average length: 12.00
-Drones: 8, Steps: 35, Time: 1.464 s, Average length: 12.00
-Drones: 9, Steps: 35, Time: 0.552 s, Average length: 12.00
-Drones: 10, Steps: 35, Time: 1.455 s, Average length: 12.00
-Drones: 11, Steps: 35, Time: 2.105 s, Average length: 12.00
-Drones: 12, Steps: 35, Time: 2.781 s, Average length: 12.01
-Drones: 13, Steps: 35, Time: 2.360 s, Average length: 12.01
-Drones: 14, Steps: 35, Time: 3.554 s, Average length: 12.01
-Drones: 15, Steps: 35, Time: 1.849 s, Average length: 12.01
-Drones: 16, Steps: 35, Time: 3.482 s, Average length: 12.01
-Drones: 17, Steps: 35, Time: 5.022 s, Average length: 12.01
-Drones: 18, Steps: 35, Time: 4.481 s, Average length: 12.01
-Drones: 19, Steps: 35, Time: 6.386 s, Average length: 12.01
-Drones: 20, Steps: 35, Time: 7.211 s, Average length: 12.01
-Drones: 21, Steps: 35, Time: 5.685 s, Average length: 12.01
-Drones: 22, Steps: 35, Time: 6.285 s, Average length: 12.01
+Drones: 2, Steps: 35, Time: 0.003 s, Average length: 12.00
+Drones: 3, Steps: 35, Time: 0.072 s, Average length: 12.00
+Drones: 4, Steps: 35, Time: 0.109 s, Average length: 12.00
+Drones: 5, Steps: 35, Time: 0.493 s, Average length: 12.00
+Drones: 6, Steps: 35, Time: 0.496 s, Average length: 12.00
+Drones: 7, Steps: 35, Time: 1.003 s, Average length: 12.00
+Drones: 8, Steps: 35, Time: 0.630 s, Average length: 12.00
+Drones: 9, Steps: 35, Time: 1.553 s, Average length: 12.00
+Drones: 10, Steps: 35, Time: 1.836 s, Average length: 12.01
+Drones: 11, Steps: 35, Time: 2.566 s, Average length: 12.01
+Drones: 12, Steps: 35, Time: 1.847 s, Average length: 12.01
+Drones: 13, Steps: 35, Time: 1.410 s, Average length: 12.01
+Drones: 14, Steps: 35, Time: 4.642 s, Average length: 12.01
+Drones: 15, Steps: 35, Time: 3.955 s, Average length: 12.01
+Drones: 16, Steps: 35, Time: 3.957 s, Average length: 12.01
+Drones: 17, Steps: 35, Time: 4.669 s, Average length: 12.01
+Drones: 18, Steps: 35, Time: 4.626 s, Average length: 12.01
+Drones: 19, Steps: 35, Time: 7.326 s, Average length: 12.01
+Drones: 20, Steps: 35, Time: 7.646 s, Average length: 12.01
+Drones: 21, Steps: 35, Time: 9.305 s, Average length: 12.01
 
-Maximum number of drones: 22
+Maximum number of drones: 21
 Stopped due to time limit of 60 seconds.
 
 
 
 Barrier Path Planning results: Random missions:
-Total successful paths found: 1231
+Total successful paths found: 975
 Average path length across successful runs: 1.14
 
 
 Barrier Path Planning results: Random obstacles:
-Max number of obstacles solved within 60 seconds: 69
-Average path length for all successful runs: 2.55
+Max number of obstacles solved within 60 seconds: 70
+Average path length for all successful runs: 2.54
 Every tenth path plotted in ObstaclesFiguresBarrier/ as Barrier_path_i.png
 Stopped due to time limit
 

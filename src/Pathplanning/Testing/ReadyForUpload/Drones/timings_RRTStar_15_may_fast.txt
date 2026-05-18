@@ -1,0 +1,25 @@
+Cross mission:
+RRT* algorithm runs in: 8.565910906472709
+RRT* algorithm runs in: 8.222766176972073
+RRT* algorithm runs in: 9.715718781284522
+RRT* algorithm runs in: 9.039462427259423
+RRT* algorithm runs in: 9.10375676053809
+RRT* algorithm runs in: 8.803484354226384
+RRT* algorithm runs in: 9.204359822790138
+RRT* algorithm runs in: 10.189698218775447
+RRT* algorithm runs in: 9.045788614777848
+RRT* algorithm runs in: 8.217371760227252
+
+
+
+Original mission:
+RRT* algorithm runs in: 8.852300437458325
+RRT* algorithm runs in: 8.338689249940217
+RRT* algorithm runs in: 7.842042302538175
+RRT* algorithm runs in: 7.168912134948187
+RRT* algorithm runs in: 7.395316781534348
+RRT* algorithm runs in: 7.729512583697215
+RRT* algorithm runs in: 9.723234718723688
+RRT* algorithm runs in: 9.592405270435847
+RRT* algorithm runs in: 9.439211416465696
+RRT* algorithm runs in: 9.186699593672529

@@ -13,7 +13,7 @@ import numpy as np
 # 1. Settings
 # ----------------------------
 ROOM_SCARLAR = 1
-TIME_LIMIT_SECONDS = 60
+TIME_LIMIT_SECONDS = 300
 RESULTS_FILE = "AstarAllTest.txt"
 CIRCLE_RADIUS = 3
 PLOT = True
@@ -33,6 +33,10 @@ SINGLE_DRONE_ACTIONS = [
     (1, 0, 0), (-1, 0, 0),
     (0, 1, 0), (0, -1, 0),
     (0, 0, 1), (0, 0, -1),
+    # include diagonal moves if desired
+    (1, 1, 0), (1, -1, 0), (-1, 1, 0), (-1, -1, 0),
+    (1, 0, 1), (1, 0, -1), (-1, 0, 1), (-1, 0, -1),
+    (0, 1, 1), (0, 1, -1), (0, -1, 1), (0, -1, -1)
 ]
 
 # This is grid coordinates, not real world coordinates, divide by 5 to get 
@@ -87,7 +91,7 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
     if radius is None:
         radius = CIRCLE_RADIUS
     if num_drones <= 0:
-        return []
+        return (True, [])
 
     # ----------------------------
     # 1. Get integer circle boundary points
@@ -101,10 +105,7 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
                 boundary.append((x, y, z))
 
     if len(boundary) < 2 * num_drones:
-        raise ValueError(
-            f"Not enough boundary points. Increase radius. "
-            f"Have {len(boundary)}, need {2*num_drones}"
-        )
+        return (False, [])  # Not enough points to sample from
 
     # ----------------------------
     # 2. Sort by angle
@@ -126,9 +127,7 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
     sampled = list(dict.fromkeys(sampled))
 
     if len(sampled) < 2 * num_drones:
-        raise ValueError(
-            "Sampling collapsed due to duplicates. Increase radius."
-        )
+        return (False, [])  # Not enough unique points after sampling
 
     # ----------------------------
     # 4. Pair opposites
@@ -141,7 +140,7 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
         goal  = sampled[i + half]
         pairs.append((start, goal))
 
-    return pairs
+    return (True, pairs)
 
 def generate_random_missions(num_drones=4):
     while True:
@@ -299,13 +298,8 @@ class AStar3D:
 
     def neighbors(self, node):
         x, y, z = node
-        directions = [
-            (1, 0, 0), (-1, 0, 0),
-            (0, 1, 0), (0, -1, 0),
-            (0, 0, 1), (0, 0, -1)
-        ]
         result = []
-        for dx, dy, dz in directions:
+        for dx, dy, dz in SINGLE_DRONE_ACTIONS:
             nxt = (x + dx, y + dy, z + dz)
             if self.in_bounds(nxt) and nxt not in self.obstacles:
                 result.append(nxt)
@@ -490,7 +484,13 @@ def joint_Astar_circle_crossing():
 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
-        starts, goals = list(zip(*(generate_circle_crossing(num_drones))))  # Unzip pairs into separate lists
+        succes, pairs = generate_circle_crossing(num_drones)
+        if not succes: # update room size and try again
+            print(f"Failed to generate circle crossing pairs for {num_drones} drones. Increasing room size and trying again.")
+            update_room_size(ROOM_SCARLAR * 2)
+            failed_runs += 1
+            continue
+        starts, goals = list(zip(*pairs))  # Unzip pairs into separate lists
         joint_start = tuple(starts)
         joint_goal = tuple(goals)
 
@@ -585,7 +585,14 @@ def hirachical_Astar_circle_crossing():
 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
-        pairs = list(generate_circle_crossing(num_drones))
+        succes, pairs = generate_circle_crossing(num_drones, radius=CIRCLE_RADIUS)
+        if not succes: # update room size and try again
+            print(f"Failed to generate circle crossing pairs for {num_drones} drones. Increasing room size and trying again.")
+            room_size *= 2
+            update_room_size(room_size)
+            failed_runs += 1
+            continue
+        pairs = list(pairs)
         start_time = time.perf_counter()
         paths = plan_multiple_paths(pairs)
         elapsed = time.perf_counter() - start_time
@@ -933,10 +940,10 @@ if __name__ == "__main__":
 
     print(f"Results file {RESULTS_FILE} initialized.")
     print("Starting A* benchmarks...\n")
-    Astar_Joint_missions([mission_OG, mission_Cross])
+    #Astar_Joint_missions([mission_OG, mission_Cross])
     print("\n\n")
     print("Starting Hirachical A* benchmarks...\n")
-    Astar_hirachical_missions([zip(mission_OG[0],mission_OG[1]), zip(mission_Cross[0],mission_Cross[1])])
+    #Astar_hirachical_missions([zip(mission_OG[0],mission_OG[1]), zip(mission_Cross[0],mission_Cross[1])])
     print("\n\n")
     print("Starting Circle Crossing benchmarks...\n")
     joint_Astar_circle_crossing()
@@ -945,16 +952,16 @@ if __name__ == "__main__":
     hirachical_Astar_circle_crossing()
     print("\n\n")
     print("Starting Joint A* random missions benchmarks...\n")
-    Joint_Astar_random_missions()
+    #Joint_Astar_random_missions()
     print("\n\n")
     print("Starting Hirachical A* random missions benchmarks...\n")
-    Hirachical_Astar_random_missions()
+    #Hirachical_Astar_random_missions()
     print("\n\n")
     print("Starting Joint A* obstacle run benchmarks...\n")
-    Joint_Astar_obstacle_run(obstacle_run_mission)
+    #Joint_Astar_obstacle_run(obstacle_run_mission)
     print("\n\n")
     print("Starting Hirachical A* obstacle run benchmarks...\n")
-    Hirachical_Astar_obstacle_run(obstacle_run_mission)
+    #Hirachical_Astar_obstacle_run(obstacle_run_mission)
 
     print(f"Results saved to {RESULTS_FILE}")
     

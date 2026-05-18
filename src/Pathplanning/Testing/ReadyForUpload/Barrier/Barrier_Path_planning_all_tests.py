@@ -12,7 +12,7 @@ type Path  = list[Point] # points is a list of tuples with (x,y,z) coordinates.
 # ----------------------------
 # 1. Settings
 # ----------------------------
-TIME_LIMIT_SECONDS = 60
+TIME_LIMIT_SECONDS = 300
 RESULTS_FILE = "BarrierPathPlanningAllTests.txt"
 CIRCLE_RADIUS = 30/5
 SAVE_FIGS = True
@@ -906,7 +906,7 @@ if __name__ == "__main__":
     
     update_random_obstacles(0,[],[])  # initialize obstacles to empty set
     print("Starting Barrier pathplanning benchmarks...\n")
-    Barrier_missions(missions)
+    #Barrier_missions(missions)
     print("\n\n")
 
     update_random_obstacles(0,[],[])
@@ -916,12 +916,12 @@ if __name__ == "__main__":
 
     update_random_obstacles(0,[],[])
     print("Starting Barrier Random Missions benchmarks...\n")
-    Barrier_Random_Missions()
+    #Barrier_Random_Missions()
     print("\n\n")   
 
     update_random_obstacles(0,[],[])
     print("Starting Barrier Increasing Obstacles benchmarks...\n")
-    Barrier_Increasing_Obstacles()
+    #Barrier_Increasing_Obstacles()
     print("\n\n") 
 
     print(f"Results saved to {RESULTS_FILE}")

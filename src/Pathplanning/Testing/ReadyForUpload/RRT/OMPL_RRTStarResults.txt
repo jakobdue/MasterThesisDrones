@@ -1,71 +1,46 @@
-OMPL RRT* Joint Benchmark Results with time limit: 60 seconds
+OMPL RRT* Joint Benchmark Results with time limit: 300 seconds
 ============================================================
 
-test: OG, Joint, drones: 4, time: 0.7017532159998154, avg_length: 4.606168700656341
-test: Cross, Joint, drones: 4, time: 0.30044482799985417, avg_length: 4.111866612610569
+test: circle Joint, drones: 1, time: 0.10392314600176178, avg_length: 18.838881606240925
+test: circle Joint, drones: 2, time: 0.5016457960009575, avg_length: 23.344433505536127
+test: circle Joint, drones: 3, time: 6.137199249998957, avg_length: 14.028409339770969
+test: circle Joint, drones: 4, time: 11.69494126599966, avg_length: 21.584865355599273
+test: circle Joint, drones: 5, time: 118.10336912700222, avg_length: 16.997452103523774
 
 
-test: OG hirachical, drones: 4, time: 0.0704315489997498, avg_length: 4.476392720154876
-test: Cross hirachical, drones: 4, time: 0.04022792000023401, avg_length: 3.9033674663251743
-
-
-test: circle Joint, drones: 1, time: 0.10011775399993894, avg_length: 17.432355462231943
-test: circle Joint, drones: 2, time: 0.6009685960000297, avg_length: 15.165284215568235
-test: circle Joint, drones: 3, time: 1.7050767660000474, avg_length: 15.964105071437935
-test: circle Joint, drones: 4, time: 14.42263426799991, avg_length: 16.99242785935833
-
-
-test: circle hirachical, drones: 1, time: 0.030096162000063487, avg_length: 17.083502691755076
-test: circle hirachical, drones: 2, time: 0.07027778499991655, avg_length: 17.368301304668705
-test: circle hirachical, drones: 3, time: 0.1305394040000465, avg_length: 17.531835026834205
-test: circle hirachical, drones: 4, time: 0.15061058299966135, avg_length: 19.46692881925428
-test: circle hirachical, drones: 5, time: 0.16065978200003883, avg_length: 18.030234061898813
-test: circle hirachical, drones: 6, time: 0.2611442239997359, avg_length: 16.497404583252273
-test: circle hirachical, drones: 7, time: 0.7143770139996377, avg_length: 21.851139949334538
-test: circle hirachical, drones: 8, time: 0.34156030199983434, avg_length: 18.38374165132523
-test: circle hirachical, drones: 9, time: 0.5735471839998354, avg_length: 22.339580937290282
-test: circle hirachical, drones: 10, time: 0.7537453759998698, avg_length: 22.044409165596093
-test: circle hirachical, drones: 11, time: 1.4897851399994124, avg_length: 20.415207325826625
-test: circle hirachical, drones: 12, time: 1.3187747029999173, avg_length: 19.60813569134387
-test: circle hirachical, drones: 13, time: 1.5504531749998023, avg_length: 18.85757116761152
-test: circle hirachical, drones: 14, time: 1.3189352389997566, avg_length: 21.11255827263333
-test: circle hirachical, drones: 15, time: 3.5388179020003463, avg_length: 17.993500065162966
-test: circle hirachical, drones: 16, time: 2.9701274389999526, avg_length: 20.559416043191373
-test: circle hirachical, drones: 17, time: 2.338345156000287, avg_length: 19.355333974593346
-test: circle hirachical, drones: 18, time: 2.106188519000625, avg_length: 20.489249500303
-test: circle hirachical, drones: 19, time: 2.398929622000651, avg_length: 20.0942265158138
-test: circle hirachical, drones: 20, time: 13.67197999200016, avg_length: 21.576095281934595
-test: circle hirachical, drones: 21, time: 5.987051580999378, avg_length: 21.4884460334555
-test: circle hirachical, drones: 22, time: 6.216855488999727, avg_length: 21.89716006091162
-test: circle hirachical, drones: 23, time: 2.650534910999795, avg_length: 20.533095619040306
-test: circle hirachical, drones: 24, time: 7.965700883999034, avg_length: 22.891552230772447
-test: circle hirachical, drones: 25, time: 29.30197982699997, avg_length: 22.875834810033016
-Stopped due to time limit
-
-
-
-test: random missions, 
-Joint runs: 67, avg_length: 3.9619404590254192, fails: 1
-
-
-test: random missions, 
-Hirachical, runs: 1119, avg_length: 3.4950642768428826, fails: 42
-
-
-Test: random obstacles, Joint
-Max number of obstacles solved within 60 seconds: 5
-Total successes: 5, fails: 1
-Average path length for all successful runs: 4.84
-
-Stopped due to time limit
-
-
-
-Test: random obstacles, hirachical
-Max number of obstacles solved within 60 seconds: 1058
-Total successes: 1058, fails: 0
-Average path length for all successful runs: 4.13
-
+test: circle hirachical, drones: 1, time: 0.020135369999479735, avg_length: 14.390403248161864
+test: circle hirachical, drones: 2, time: 0.07156172900067759, avg_length: 18.253169236699186
+test: circle hirachical, drones: 3, time: 0.08034566100104712, avg_length: 16.858004782607498
+test: circle hirachical, drones: 4, time: 0.26119408900194685, avg_length: 18.05492446117892
+test: circle hirachical, drones: 5, time: 0.2410213519979152, avg_length: 16.380910704613704
+test: circle hirachical, drones: 6, time: 0.27118478100237553, avg_length: 20.384171174361896
+test: circle hirachical, drones: 7, time: 0.3149040500029514, avg_length: 17.390520879373614
+test: circle hirachical, drones: 8, time: 0.8758298659995489, avg_length: 19.081356883834705
+test: circle hirachical, drones: 9, time: 0.45236617199043394, avg_length: 19.22004550390964
+test: circle hirachical, drones: 10, time: 1.5705779650015756, avg_length: 25.135406684902875
+test: circle hirachical, drones: 11, time: 1.0259911189968989, avg_length: 22.3443186586208
+test: circle hirachical, drones: 12, time: 0.724199315005535, avg_length: 17.645701828257142
+test: circle hirachical, drones: 13, time: 1.6119809999981953, avg_length: 19.329289135579195
+test: circle hirachical, drones: 14, time: 3.2529406910143734, avg_length: 21.736995131535572
+test: circle hirachical, drones: 15, time: 2.8519820109941065, avg_length: 20.997055656422337
+test: circle hirachical, drones: 16, time: 1.4998009099908813, avg_length: 20.496690284863348
+test: circle hirachical, drones: 17, time: 1.9636625789935351, avg_length: 19.505260762590183
+test: circle hirachical, drones: 18, time: 3.16525030000048, avg_length: 20.016050169083755
+test: circle hirachical, drones: 19, time: 2.4908206020081707, avg_length: 20.541938482887375
+test: circle hirachical, drones: 20, time: 6.1172916349969455, avg_length: 20.508945601216904
+test: circle hirachical, drones: 21, time: 3.185178101004567, avg_length: 20.919922766295223
+test: circle hirachical, drones: 22, time: 8.420615951006766, avg_length: 20.75465469042146
+test: circle hirachical, drones: 23, time: 8.39755911899556, avg_length: 19.932126622686866
+test: circle hirachical, drones: 24, time: 13.420791630993335, avg_length: 21.29282506728752
+test: circle hirachical, drones: 25, time: 16.458681888001593, avg_length: 23.42567246939386
+test: circle hirachical, drones: 26, time: 10.239852875001816, avg_length: 21.066382093033365
+test: circle hirachical, drones: 27, time: 38.338320722996286, avg_length: 21.44131233626643
+test: circle hirachical, drones: 28, time: 15.316174361989397, avg_length: 21.78607525008993
+test: circle hirachical, drones: 29, time: 8.769452824999462, avg_length: 20.916338036526888
+test: circle hirachical, drones: 30, time: 74.48450290499022, avg_length: 21.61498208706359
+test: circle hirachical, drones: 31, time: 47.40382294898882, avg_length: 23.714389583377717
+test: circle hirachical, drones: 32, time: 16.73923606300741, avg_length: 23.942508263774087
+test: circle hirachical, drones: 33, time: 174.16079323799931, avg_length: 23.54615723850471
 Stopped due to time limit
 
 

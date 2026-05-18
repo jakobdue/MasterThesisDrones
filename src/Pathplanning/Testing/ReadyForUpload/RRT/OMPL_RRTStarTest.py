@@ -13,7 +13,7 @@ import numpy as np
 # ----------------------------
 # Settings
 # ----------------------------
-TIME_LIMIT_SECONDS = 60
+TIME_LIMIT_SECONDS = 300
 RESULTS_FILE = "OMPL_RRTStarResults.txt"
 CIRCLE_RADIUS = 3 
 
@@ -780,14 +780,14 @@ if __name__ == "__main__":
     np.random.seed(42)
 
     results = []
-    test_fixed_missions(results, hirachical=False)
-    test_fixed_missions(results, hirachical=True)
+    #test_fixed_missions(results, hirachical=False)
+    #test_fixed_missions(results, hirachical=True)
     test_circle_scaling(results, hirachical=False)
     test_circle_scaling(results, hirachical=True)
-    test_random_missions(results, hirachical=False)
-    test_random_missions(results, hirachical=True)
-    test_obstacles_scaling(results, obstacle_run_mission, hirachical=False)
-    test_obstacles_scaling(results, obstacle_run_mission, hirachical=True)
+    #test_random_missions(results, hirachical=False)
+    #test_random_missions(results, hirachical=True)
+    #test_obstacles_scaling(results, obstacle_run_mission, hirachical=False)
+    #test_obstacles_scaling(results, obstacle_run_mission, hirachical=True)
    
 
     with open(RESULTS_FILE, "w") as f:

@@ -1,6 +1,0 @@
-A* Benchmark Results
-====================
-
-Total successful paths found: 112
-Average path length across successful runs: 8.79
-

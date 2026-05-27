@@ -1,6 +1,0 @@
-RRT* Benchmark Results
-======================
-
-{'test': 'OG', 'drones': 4, 'time': 6.609125290997326, 'avg_length': 12.64327378717844}
-{'test': 'Cross', 'drones': 4, 'time': 6.720052291988395, 'avg_length': 9.466774290571516}
-{'test': 'random', 'runs': 3, 'avg_length': 6.1111549968475245}

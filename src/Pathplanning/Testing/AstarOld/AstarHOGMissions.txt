@@ -1,8 +1,0 @@
-Mission: OG
-Time: 0.0013s
-Avg length: 16.50
-
-Mission: Cross
-Time: 0.0006s
-Avg length: 13.50
-

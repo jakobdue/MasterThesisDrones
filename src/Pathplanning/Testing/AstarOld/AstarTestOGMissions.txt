@@ -1,6 +1,0 @@
-A* Benchmark Results
-====================
-
-Drones: 4, Steps: 21, Time: 0.120 s, Mission: OG, Average length: 16.00
-Drones: 4, Steps: 13, Time: 0.076 s, Mission: Cross, Average length: 12.00
-

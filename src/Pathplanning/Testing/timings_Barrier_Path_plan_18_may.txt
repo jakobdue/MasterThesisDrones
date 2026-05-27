@@ -1,0 +1,18 @@
+Original mission: 
+Barrier path planning algorithm runs in: 7.219571895780973
+Barrier path planning algorithm runs in: 7.734350260230713
+---- Crash -----
+Barrier path planning algorithm runs in: 7.248811780940741
+---- Crash -----
+Barrier path planning algorithm runs in: 8.371127864462323
+Barrier path planning algorithm runs in: 7.53051089606015
+Barrier path planning algorithm runs in: 7.5062409892561845
+Barrier path planning algorithm runs in: 7.18477365677245
+Barrier path planning algorithm runs in: 6.847973312833346
+Barrier path planning algorithm runs in: 7.34200388554018
+---- Crash -----
+Barrier path planning algorithm runs in: 7.193397541705053 KISS
+
+
+
+Cross mission: 

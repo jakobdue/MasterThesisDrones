@@ -3,6 +3,8 @@
 This repository contains the implementation and experimental evaluation framework developed
 for a master's thesis on collision avoidance and coordinated control in multi-drone systems.
 
+Videos of the Crazyflie drones can be found in /VideosOfDroneFlight
+
 The project focuses primarily on:
 
 - Barrier-function-based collision avoidance
@@ -27,6 +29,7 @@ src/
 │   ├── Barrier/
 │   └── RRT/
 └── README.txt
+/VideosOfDroneFlight
 ```
 
 # Main Research Topics

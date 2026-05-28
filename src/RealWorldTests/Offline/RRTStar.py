@@ -1,45 +1,22 @@
-# -*- coding: utf-8 -*-
-"""
-Crazyflie swarm waypoint planning using RRT* (replaces A*).
-
-- Plans one path per mission sequentially.
-- Each planned path is added to a global obstacle set (like your working A* script).
-- Uses a 3D bounded workspace, but the example missions are on z=0.
-
-NOTE: This implements a lightweight, practical RRT* for your grid-like space:
-- Samples are continuous (floats) within bounds.
-- Collision checking is done by rounding points to grid cells and checking against obstacles.
-- Segment collision is checked by discretizing along edges.
-
-If you want more/less separation, tune:
-- SAFETY_RADIUS_CELLS
-- STEP_SIZE
-- SEARCH_RADIUS
-- GOAL_REGION_RADIUS
-- MAX_ITER
-"""
 import time
 import math
 import random
 from functools import partial
 from typing import List, Tuple, Set, Optional
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory, Swarm
 from cflib.utils import uri_helper
 
-# ----------------------------
-# Crazyflie URIs (edit as needed)
-# ----------------------------
+# URI of the Crazyflies to connect to
 uri1 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701')
 uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E706')
 uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
 uri4 = uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E705')
 uris = [uri1, uri2, uri3, uri4]
+
 curr_pos = {uri: (0, 0, 0) for uri in uris}
 num_runs = 4
 if num_runs > 1:
@@ -55,7 +32,7 @@ missions = [ # Original
     ((3, -5, 0), (3, 5, 0))
 ]
 
-return_to_origin_paths = { # Original
+return_to_origin_paths = { # Mission 1
     0: [(1.0, 1.0, 0.0, 0.0),
         (1.0, 1.0, 0.3, 0.0),
         (-1.0, -1.0, 0.3, 0.0),
@@ -74,8 +51,6 @@ return_to_origin_paths = { # Original
         (0.6, -1.0, 0.0, 0.0)
     ]
 }
-    
-
 
 missions_ = [ # Cross
     ((-1, -1, 0), (5, 5, 0)),
@@ -135,11 +110,10 @@ SAFETY_RADIUS_CELLS = 1         # inflate obstacles by this many grid cells (0 =
 
 # ---- convergence parameters ----
 EPSILON = 0.01          # 1% improvement threshold
-MAX_NO_IMPROVE = 3     # stop after this many small improvements
+MAX_NO_IMPROVE = 3      # stop after this many small improvements
 no_improve_counter = 0
 # ---- convergence parameters ----
 MAX_STALL_ITERS = 500    # stop if no meaningful improvement for this many iterations
-
 
 # ----------------------------
 # Utility
@@ -164,7 +138,6 @@ def inflate_cell(cell: Tuple[int, int, int], radius: int) -> List[Tuple[int, int
                 if in_bounds_cell(c):
                     out.append(c)
     return out
-
 
 # ----------------------------
 # RRT* structures
@@ -294,14 +267,14 @@ class RRTStar3D:
         return math.dist(node.pos(), self.goal.pos()) <= GOAL_REGION_RADIUS
 
     def generate_final_path(self, goal_node: Node) -> List[Tuple[int, int, int]]:
-        # backtrack then convert to integer grid cells (rounded)
+        # Backtracking then converting to integer grid cells (rounded)
         pts: List[Tuple[int, int, int]] = []
         n: Optional[Node] = goal_node
         while n is not None:
             pts.append(round_cell(n.pos()))
             n = n.parent
         pts = pts[::-1]
-        # remove immediate duplicates
+        # Removing immediate duplicates
         dedup = []
         for p in pts:
             if not dedup or dedup[-1] != p:
@@ -387,7 +360,6 @@ class RRTStar3D:
 
         return self.generate_final_path(best_goal_node)
 
-
 # ----------------------------
 # Multi-mission planning (RRT*)
 # ----------------------------
@@ -397,12 +369,12 @@ def plan_multiple_paths_rrtstar(
     obstacles: Set[Tuple[int, int, int]] = set()
     all_paths: List[Optional[List[Tuple[int, int, int]]]] = []
 
-    deanline = time.perf_counter() + time_limit if time_limit is not None else None
+    deadline = time.perf_counter() + time_limit if time_limit is not None else None
     time_per_drone = None
     if time_limit is not None:
         time_per_drone = time_limit / len(pairs)
     for start, goal in pairs:
-        if deanline is not None and time.perf_counter() > deanline:
+        if deadline is not None and time.perf_counter() > deadline:
             print("Overall time limit reached, stopping further planning.")
             all_paths.append(None)
             continue
@@ -452,7 +424,7 @@ def plot_paths(paths: List[Optional[List[Tuple[int, int, int]]]]) -> None:
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
 
-    # calculate average path length
+    # Calculate average path length
     total_length = 0.0
     count = 0
     for path in paths:
@@ -468,7 +440,6 @@ def plot_paths(paths: List[Optional[List[Tuple[int, int, int]]]]) -> None:
 
     plt.show()
     fig.savefig("paths_rrtstar_fast.pdf")
-
 
 # ----------------------------
 # Convert paths to Crazyflie sequences (same mapping you used)
@@ -488,7 +459,6 @@ def compress_path_turnpoints(path: List[Tuple[int, int, int]]) -> List[Tuple[int
         filtered.append(curr)
     filtered.append(path[-1])
     return filtered
-
 
 def path_to_sequence(path: List[Tuple[int, int, int]]) -> List[Tuple[float, float, float, float]]:
     seq: List[Tuple[float, float, float, float]] = []
@@ -564,13 +534,11 @@ def run_sequence(scf, num_seq):
 
     time.sleep(0.1)
 
-
 def update_to_return():
     global sequences, backup_sequences
     backup_sequences = sequences
     sequences = return_to_origin_paths
     
-
 def update_to_old_sequences():
     global sequences, runtimes
     sequences = backup_sequences
@@ -582,7 +550,6 @@ def update_to_old_sequences():
 if __name__ == "__main__":
     # Plan
     paths = plan_multiple_paths_rrtstar(missions)
-    #_paths(paths)
 
     # Build sequences
     sequences = {}
@@ -624,5 +591,3 @@ if __name__ == "__main__":
                 swarm.parallel_safe(start_position_printing)
                 swarm.parallel_safe(run_sequence, args_dict=args_dict)
             update_to_old_sequences()
-
-

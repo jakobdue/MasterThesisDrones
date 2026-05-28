@@ -1,15 +1,13 @@
 import time
 from turtle import position
-
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
 from cflib.utils import uri_helper
 from cflib.crazyflie.swarm import CachedCfFactory
 from functools import partial
-
-
 from cflib.crazyflie.swarm import Swarm
-# URI to the Crazyflie to connect to
+
+# URI of the Crazyflies to connect to
 uris = [
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
@@ -24,7 +22,6 @@ uris = [
     ]
 
 position_params = {uri: [i] for i, uri in enumerate(uris)}
-
 
 # Variables:
 num_drones = 4
@@ -93,7 +90,7 @@ sequences_ = { # cross_mission
     ] 
 }
 
-sequences_ = { #Original
+sequences_ = { #Mission 1
     0: [
     (-1, -1, 0.7, 0),
     (1.2, 1.0, 0.4, 0),
@@ -138,7 +135,7 @@ def cubic_spline_B(v):
     else:
         return 0
 
-# find the gradien of the penalty function p_eps with respect to the position of the drone, which is the barrier force
+# Finding the gradient of the penalty function p_eps
 def cubic_spline_B_derivative(v):
     if v < 1:
         return -2*v + 1.5 * v ** 2
@@ -154,16 +151,16 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
     if z < 1e-6:
         return (0, 0, 0)
 
-    # Only apply force inside interaction radius
+    # Applying force inside interaction radius
     if z >= eps:
         return (0, 0, 0)
 
-    # Compute h(z)
+    # Computing h(z)
     v = 2 * z / eps
     B = cubic_spline_B(v)
     h = 1.5 * B
 
-    # Compute h'(z)
+    # Computing h'(z)
     B_prime = cubic_spline_B_derivative(v)
     h_prime = (3 / eps) * B_prime
 
@@ -177,13 +174,12 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
 
     return grad
 
-
 def square_dist(pos1, pos2):
     dx = pos1[0] - pos2[0]
     dy = pos1[1] - pos2[1]
     dz = pos1[2] - pos2[2]
 
-    return (dx**2 + dy**2 + dz**2)# avoiding sqrt for efficiency, since we only care about relative distances
+    return (dx**2 + dy**2 + dz**2)
 
 def take_off(cf, position):
     take_off_time = 1.0
@@ -202,29 +198,23 @@ def position_callback(uri, timestamp, data, logconf):
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    #print('pos: ({}, {}, {})'.format(x, y, z))
-
 
 def start_position_printing(scf):
     uri = scf.cf.link_uri
-
     log_conf = LogConfig(name='Position', period_in_ms=500)
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
-
     scf.cf.log.add_config(log_conf)
 
-    # Bind uri into the callback
+    # Binding uri into the callback
     log_conf.data_received_cb.add_callback(partial(position_callback, uri))
-
     log_conf.start()
-
 
 def run_sequence(scf, num_seq):
     cf = scf.cf
 
-    # Arm the Crazyflie
+    # Arming the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
 
@@ -239,26 +229,25 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        #print('Setting position {}'.format(position))
-        while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
+        while (square_dist(curr_pos[me], position) > 0.025):  
             current_vec = sub_vecs(position, curr_pos[me])
             current_vec_length = vec_length(current_vec) 
-            # Scale the current vector to unit vector
-            current_vec = scale_vec(current_vec, max_speed / current_vec_length if current_vec_length > 0 else 0)
 
+            # Scaling the current vector to unit vector
+            current_vec = scale_vec(current_vec, max_speed / current_vec_length if current_vec_length > 0 else 0)
             force_list = []
             for other in others:
                 force_list.append(barrier_force_cubic_spline(curr_pos[me], curr_pos[other], eta_safety_distance))
-            # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+
+            # Calculating the total barrier force by summing the contributions from all other drones
             force = (0, 0, 0)
             for f in force_list:
                 force = add_vecs(force, f)
             
-            #print(f'Calculated individual barrier forces: {force_list}')
-
             if force != (0, 0, 0):
                 vec_to_send = add_vecs(force, current_vec)
-                #Scale the total vector to the max_reactiion if it is too long
+
+                #Scaling the total vector to the max_reactiion if it is too long
                 vec_to_send_length = vec_length(vec_to_send)
                 if vec_to_send_length > max_speed:
                     current_vec = scale_vec(vec_to_send, max_speed / vec_to_send_length) 
@@ -267,28 +256,26 @@ def run_sequence(scf, num_seq):
                 
             cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
      
-            #time.sleep(0.1)
-
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+
+    # Giving control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
     time.sleep(0.1)
-
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+    
+    # Giving control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
     end = time.perf_counter()
     runtime = end - start
     runtimes.append(runtime)
 
-    # Make sure that the last packet leaves before the link is closed
+    # Making sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
     time.sleep(0.1)
-
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
@@ -298,11 +285,8 @@ if __name__ == '__main__':
         swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
 
-    # calculate average runtimes and write to file
+    # calculating average runtimes and write to file
     avg_runtime = sum(runtimes) / len(runtimes)
 
     with open("timings_barrier_patrol_mission.txt", "a") as f:
         f.write(f"Barrier Improved algorithm runs in: {avg_runtime}\n")
-
-
-

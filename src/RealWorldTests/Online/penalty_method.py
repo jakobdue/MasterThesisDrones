@@ -1,5 +1,4 @@
 import time
-
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.log import LogConfig
@@ -8,10 +7,9 @@ from cflib.utils import uri_helper
 from cflib.utils.reset_estimator import reset_estimator
 from cflib.crazyflie.swarm import CachedCfFactory
 from functools import partial
-
-
 from cflib.crazyflie.swarm import Swarm
-# URI to the Crazyflie to connect to
+
+# URI of the Crazyflies to connect to
 uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
 uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E704')
 uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
@@ -71,7 +69,7 @@ sequences = { # sequence patroll
     ],
 }
 
-sequences_ = {
+sequences_ = { # cross mission
     0: [
     (-0.2, -0.2, 0.7, 0),
     (1.0, 1.0, 0.4, 0),
@@ -94,7 +92,7 @@ sequences_ = {
     ] 
 }
 
-sequence_1 = {
+sequence_1 = { # Mission 1
     0: [
     (-1, -1, 0.7, 0),
     (1.2, 1.0, 0.4, 0),
@@ -117,7 +115,6 @@ sequence_1 = {
     ] 
 }
 
-    
 curr_pos = {uri1: (0, 0, 0),
             uri2: (0, 0, 0),
             uri3: (0, 0, 0),
@@ -142,8 +139,8 @@ def quadratic_penalty_g(pos1, pos2, eta_safety_distance):
     dz = pos1[2] - pos2[2]
 
     distance = (dx**2 + dy**2 + dz**2)**0.5
-    if distance == 0:
-        return ((0, 0, 0), -eta_safety_distance)  # Avoid division by zero
+    if distance == 0: # Avoid division by zero
+        return ((0, 0, 0), -eta_safety_distance)  
 
     return ((dx/distance, dy/distance, dz/distance), distance - eta_safety_distance)
 
@@ -152,22 +149,20 @@ def square_dist(pos1, pos2):
     dy = pos1[1] - pos2[1]
     dz = pos1[2] - pos2[2]
 
-    return (dx**2 + dy**2 + dz**2)# avoiding sqrt for efficiency, since we only care about relative distances
+    # avoiding sqrt for efficiency, since we only care about relative distances
+    return (dx**2 + dy**2 + dz**2)
 
 def barrier_force(pos1, pos2, eta_safety_distance, k_stiffness):
     vec, g = quadratic_penalty_g(pos1, pos2, eta_safety_distance)
 
     if g <= 0:
-        #print(f'COLLISION IMMINENT! g={g:.2f}')
         val = -k_stiffness * g
         return (vec[0] * val, vec[1] * val, vec[2] * val)
 
     else: #g > 0:
-        #print(f"No barrier force. g={g:.2f}")
         return (0, 0, 0)
 
 def limit_velocity(cf, xy=0.25, z=0.20):
-    # m/s
     cf.param.set_value('posCtlPid.xVelMax', xy)
     cf.param.set_value('posCtlPid.yVelMax', xy)
     cf.param.set_value('posCtlPid.zVelMax', z)
@@ -184,35 +179,28 @@ def take_off(cf, position):
         cf.commander.send_velocity_world_setpoint(0, 0, vz, 0)
         time.sleep(sleep_time)
 
-
 def position_callback(uri, timestamp, data, logconf):
     x = data['kalman.stateX']
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    #print('pos: ({}, {}, {})'.format(x, y, z))
-
 
 def start_position_printing(scf):
     uri = scf.cf.link_uri
-
     log_conf = LogConfig(name='Position', period_in_ms=500)
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
-
     scf.cf.log.add_config(log_conf)
 
-    # Bind uri into the callback
+    # Binding uri into the callback
     log_conf.data_received_cb.add_callback(partial(position_callback, uri))
-
     log_conf.start()
-
 
 def run_sequence(scf, num_seq):
     cf = scf.cf
 
-    # Arm the Crazyflie
+    # Arming the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
 
@@ -227,8 +215,7 @@ def run_sequence(scf, num_seq):
     time.sleep(1.0)
 
     for position in sequences[num_seq]:
-        #print('Setting position {}'.format(position))
-        while (square_dist(curr_pos[me], position) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
+        while (square_dist(curr_pos[me], position) > 0.025): 
             current_vec = sub_vecs(position, curr_pos[me])
             length = vec_length(current_vec)
             current_vec = scale_vec(current_vec, (1/length)*max_speed) if length > 0 else (0, 0, 0)
@@ -236,14 +223,16 @@ def run_sequence(scf, num_seq):
             force_list = []
             for other in others:
                 force_list.append(barrier_force(curr_pos[me], curr_pos[other], eta_safety_distance, k_stiffness=k_stiffness))
-            # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+
+            # Calculating the total barrier force by summing the contributions from all other drones
             force = (0, 0, 0)
             for f in force_list:
                 force = add_vecs(force, f)
             
             if force != (0, 0, 0):
                 vec_to_send = add_vecs(force, current_vec)
-                #Scale the total vector to the max_reactiion if it is too long
+
+                # Scaling the total vector to the max_reactiion if it is too long
                 vec_to_send_length = vec_length(vec_to_send)
                 if vec_to_send_length > max_speed:
                     current_vec = scale_vec(vec_to_send, max_speed / vec_to_send_length) 
@@ -251,11 +240,11 @@ def run_sequence(scf, num_seq):
                     current_vec = vec_to_send
                 
             cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
-
             time.sleep(0.1)
 
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+
+    # Giving control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
     end = time.perf_counter()
@@ -265,7 +254,6 @@ def run_sequence(scf, num_seq):
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
     time.sleep(0.1)
-
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
@@ -280,5 +268,3 @@ if __name__ == '__main__':
 
     with open("timings_barrier_Patroll_mission.txt", "a") as f:
         f.write(f"Barrier Simple algorithm runs in: {avg_runtime}\n")
-
-

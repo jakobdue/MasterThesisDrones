@@ -3,7 +3,6 @@ import glob
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-
 def plot_from_json(filename):
     with open(filename, "r") as f:
         data = json.load(f)
@@ -32,11 +31,10 @@ def plot_from_json(filename):
 
     plt.show()
 
-
 if __name__ == "__main__":
     files = sorted(glob.glob("OMPLOBSTACLE/ompl_obstacle_run_*.json"))
 
-    ## plot every 10 files to avoid too many plots
+    ## Plot every 10 files to avoid too many plots
     for i, file in enumerate(files):
         if i % 5 == 0:
             plot_from_json(file)

@@ -1,14 +1,13 @@
 from ompl import base as ob
 from ompl import geometric as og
 from ompl import util as ou
-
-ou.setLogLevel(ou.LOG_NONE)
-
 import time
 import math
 import random
 import json
 import numpy as np
+
+ou.setLogLevel(ou.LOG_NONE)
 
 # ----------------------------
 # Settings
@@ -24,7 +23,6 @@ Y_MIN, Y_MAX = -1.8, 1.8
 Z_MIN, Z_MAX = 0.0, 3.0
 obstacles = set()
 local_obstacles = set()
-
 
 # ----------------------------
 # Mission generators
@@ -55,6 +53,7 @@ def generate_circle_crossing(num_drones, radius=CIRCLE_RADIUS, z=0.7):
 
 def generate_circle_crossing_hierarchical(num_drones, radius=CIRCLE_RADIUS, z=1.0):
     radius = radius/5
+
     if num_drones <= 0:
         return [], []
 
@@ -114,6 +113,7 @@ def update_random_obstacles(num_obstacles, start, goal):
     global obstacles
     obstacles = set()
     new_obstacles_generated = True
+    
     # Also check that the time does not run out 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while len(obstacles) < num_obstacles:
@@ -140,6 +140,7 @@ def update_random_obstacles(num_obstacles, start, goal):
             print(f"Time limit of {TIME_LIMIT_SECONDS} seconds reached while generating obstacles.")
             new_obstacles_generated = False
             break
+
     return new_obstacles_generated
 
 def update_local_obstacles(obstacles):
@@ -162,8 +163,6 @@ def fixed_og_mission():
     ]
 
     return starts, goals
-
-
 
 def fixed_cross_mission():
     starts = [
@@ -191,7 +190,6 @@ def obstacle_run_mission():
     goals = [(g[0]/5, g[1]/5, g[2]/5) for g in mission_goal_obstacle_run]
     return starts, goals
 
-
 # ----------------------------
 # Helpers
 # ----------------------------
@@ -210,7 +208,6 @@ def positions_are_valid(positions):
 
     return True
 
-
 def compute_average_path_length(drone_paths):
     total = 0.0
     for path in drone_paths:
@@ -224,7 +221,6 @@ def compute_average_path_length(drone_paths):
 
     return total / len(drone_paths)
 
-
 def plot_paths(drone_paths, filename):
     json_filename = filename.rsplit(".", 1)[0] + ".json"
 
@@ -237,7 +233,6 @@ def plot_paths(drone_paths, filename):
         json.dump(data, f, indent=4)
 
     print(f"Path data saved to {json_filename}")
-
 
 def validate_joint_path(joint_path, steps_per_segment=50):
     for k in range(len(joint_path) - 1):
@@ -265,7 +260,6 @@ def update_room_size(room_scaler):
     Y_MIN, Y_MAX = -1.8 * room_scaler, 1.8 * room_scaler
     Z_MIN, Z_MAX = 0.0, 3.0 * room_scaler
 
-
 # ----------------------------
 # OMPL space
 # ----------------------------
@@ -286,7 +280,6 @@ def create_drone_space():
 
     return drone_space
 
-
 # ----------------------------
 # Validity checker
 # ----------------------------
@@ -306,7 +299,6 @@ class ValidityChecker(ob.StateValidityChecker):
             ))
 
         return positions_are_valid(positions)
-
 
 # ----------------------------
 # Motion validator
@@ -343,7 +335,6 @@ class MotionValidator(ob.MotionValidator):
             lastValid.second = 0.0
 
         return valid
-
 
 # ----------------------------
 # OMPL solver
@@ -437,7 +428,6 @@ def solve_ompl_rrtstar(start_positions, goal_positions):
 # ----------------------------
 # Hirachical solver
 # ----------------------------
-
 def solve_single_drone_rrtstar(start, goal):
     if not positions_are_valid([start]):
         return None, 0
@@ -518,7 +508,6 @@ def convert_path_to_obstacles(path, resolution=0.25):
 
     return obs
 
-
 def plan_multiple_paths_ompl(starts, goals):
     global obstacles
 
@@ -530,6 +519,7 @@ def plan_multiple_paths_ompl(starts, goals):
     for i in range(len(starts)):
         start = starts[i]
         goal = goals[i]
+
         # Add all the other drones start and goal as local obstacles
         local_obs = set()
         for j in range(len(starts)):
@@ -553,10 +543,8 @@ def plan_multiple_paths_ompl(starts, goals):
 
     return all_paths, total_time
 
-
-
 # ----------------------------
-# Tests
+# Tests: Fixed Missions
 # ----------------------------
 def test_fixed_missions(results, hirachical):
     update_random_obstacles(0, [], [])
@@ -593,8 +581,9 @@ def test_fixed_missions(results, hirachical):
             )
     results.append("\n")
 
-
-
+# ----------------------------
+# Tests: Circle Scaling
+# ----------------------------
 def test_circle_scaling(results, hirachical):
     update_room_size(10.0)  # scale up the room for this test
     update_random_obstacles(0, [], [])
@@ -608,11 +597,10 @@ def test_circle_scaling(results, hirachical):
             results.append("Stopped due to time limit\n")
             break
 
-        print(f"\nTrying {num_drones} drones circle...")
-        
+        print(f"\nTrying {num_drones} drones circle...")   
 
-        if hirachical:
-            starts, goals = generate_circle_crossing_hierarchical(num_drones, radius = 30.0)  # use larger radius for hierarchical to fit more drones
+        if hirachical: # Use larger radius for hierarchical to fit more drones
+            starts, goals = generate_circle_crossing_hierarchical(num_drones, radius = 30.0)  
             drone_paths, elapsed = plan_multiple_paths_ompl(starts, goals)
             
         else: 
@@ -643,7 +631,9 @@ def test_circle_scaling(results, hirachical):
         plot_paths(last_paths, "ompl_circle_paths.json")
     update_room_size(1.0)
 
-
+# ----------------------------
+# Tests Random Missions
+# ----------------------------
 def test_random_missions(results, hirachical):
     update_random_obstacles(0, [], [])
     print("\nRunning random missions...")
@@ -690,8 +680,9 @@ def test_random_missions(results, hirachical):
     if first_successful_paths is not None:
         plot_paths(first_successful_paths, "ompl_random_paths.json")
 
-
-
+# ----------------------------
+# Tests Obstacles Scaling
+# ----------------------------
 def test_obstacles_scaling(results, mission, hirachical):
     update_random_obstacles(0, [], [])
     successes = 0
@@ -718,9 +709,7 @@ def test_obstacles_scaling(results, mission, hirachical):
             fails += 1
             continue
         
-        
         local_results.append((drone_paths, local_obs, elapsed))
-        
         
         if deadline - time.perf_counter() <= 0:
             print(f"No more solutions can be found within the time limit of {TIME_LIMIT_SECONDS} seconds.")
@@ -770,8 +759,6 @@ def test_obstacles_scaling(results, mission, hirachical):
 
         print(f"Path and obstacle data saved to {filename}")
 
-
-
 # ----------------------------
 # Main
 # ----------------------------
@@ -788,7 +775,6 @@ if __name__ == "__main__":
     test_random_missions(results, hirachical=True)
     test_obstacles_scaling(results, obstacle_run_mission, hirachical=False)
     test_obstacles_scaling(results, obstacle_run_mission, hirachical=True)
-   
 
     with open(RESULTS_FILE, "w") as f:
         f.write(

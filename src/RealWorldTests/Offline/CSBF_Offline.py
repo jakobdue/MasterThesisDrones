@@ -3,23 +3,17 @@ import math
 import random
 from functools import partial
 from typing import List, Tuple, Set, Optional
-
 import numpy as np
 import matplotlib.pyplot as plt
-
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
 from cflib.crazyflie.swarm import CachedCfFactory, Swarm
 from cflib.utils import uri_helper
-
-
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize, check_grad
 import numpy as np
-
 type Point = tuple[float, float, float]
 type Path  = list[Point] # points is a list of tuples with (x,y,z) coordinates.
-
 
 # ----------------------------
 # 1. Settings
@@ -35,17 +29,16 @@ PLOT = True
 DEBUG = False
 AUTOAXIS_IN_CIRCLEPLOT = True
 
-
 random.seed(42) # For reproducibility
 
 # Constants: 
 eta_safety_distance = 0.4
 T = 10
-dt = 1 / (T - 1) # Normalize to the number of timesteps.
-obstacles = set() # Set of tuples with (x,y,z) coordinates of obstacles. This is global so it can be accessed in the barrier function.
+dt = 1 / (T - 1) # Normalizing to the number of timesteps.
+obstacles = set() # Set of tuples with (x,y,z) coordinates of obstacles.
 
 # Missions
-mission_Cross = { # This is real world coordinates
+mission_Cross = { # Real world coordinates
     0: [(-0.2, -0.2, 0.7), (1.0, 1.0, 0.7)], 
     1: [(-0.2,  0.2, 0.7), (1.0, -1.0, 0.7)],
     2: [(0.2, 0.2, 0.7), (-1.0, -1.0, 0.7)],
@@ -91,11 +84,11 @@ def update_random_obstacles(num_obstacles, start, goal):
     global obstacles
     obstacles = set()
     new_obstacles_generated = True
-    # Also check that the time does not run out 
+    # Checking that the time does not run out 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while len(obstacles) < num_obstacles:
         obs = (random.randint(X_MIN, X_MAX), random.randint(Y_MIN, Y_MAX), random.randint(Z_MIN, Z_MAX))
-        # Check that the generated obstacle is not start nor goal:
+        # Checking that the generated obstacle is not start nor goal:
         if obs in start or obs in goal:
             continue
         obstacles.add(scale_vec(1/5, obs))
@@ -119,8 +112,7 @@ def compute_average_path_length(paths):
             count += 1
     return (total_length / count) if count > 0 else None
 
-
-# Interpolate points in the paths to have T points in total. There is always two points in the path, so we can interpolate T-2 points between them.
+# Interpolating points in the paths to have T points in total.
 def interpolate_path(path: Path, noise_std: float = 0.001) -> Path:
     if len(path) < 2:
         raise ValueError("Path must have at least 2 points to interpolate.")
@@ -129,13 +121,13 @@ def interpolate_path(path: Path, noise_std: float = 0.001) -> Path:
     interpolated_path = []
     
     for t in range(T):
-        alpha = t / (T - 1)  # alpha goes from 0 to 1
+        alpha = t / (T - 1)  # Alpha goes from 0 to 1
         point = (
             start[0] + alpha * (end[0] - start[0]),
             start[1] + alpha * (end[1] - start[1]),
             start[2] + alpha * (end[2] - start[2])
         )
-        # add noise only to interior points
+        # Adding noise only to interior points
         if 0 < t < T-1:
             noise = np.random.normal(0.0, noise_std, size=3)
             point = (
@@ -144,7 +136,6 @@ def interpolate_path(path: Path, noise_std: float = 0.001) -> Path:
                 max(point[2] + noise[2], 0.0)
             )
         interpolated_path.append(point)
-    
     return interpolated_path
 
 def make_bounds(paths):
@@ -158,8 +149,6 @@ def make_bounds(paths):
                     bounds.append((0.0, None))  # z >= 0
                 else:
                     bounds.append((None, None))
-    # make bounds that makes sure that two consecutive points are never more than 2 * safety distance
-    
     return bounds
 
 def flatten_paths(paths: list[Path]) -> np.ndarray:
@@ -176,11 +165,9 @@ def unflatten_paths(x: np.ndarray, num_paths: int) -> list[Path]:
         paths.append(path)
     return paths
 
-# Global variables to hold the current mission's paths and bounds, which will be updated before each optimization run.
-drones = []
+# Global variables to hold the current mission's paths and bounds.
 x0 = flatten_paths(drones)
 bounds = make_bounds(drones)
-
 
 # ----------------------------
 # Barrier function definitions
@@ -224,12 +211,12 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
         return (0, 0, 0)
 
     z = math.sqrt(z2 + 1e-8)
-    # Compute h(z)
+    # Computing h(z)
     v = 2 * z / eps
     B = cubic_spline_B(v)
     h = 1.5 * B
 
-    # Compute h'(z)
+    # Computing h'(z)
     B_prime = cubic_spline_B_derivative(v)
     h_prime = (3 / eps) * B_prime
 
@@ -241,10 +228,7 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
 
     # gradient = dp/dz * (x - y)
     grad = (p_prime * dx, p_prime * dy, p_prime * dz)
-    
     return grad
-
-
 
 def total_path_energy(paths:list[Path]): 
     ref_x0 = unflatten_paths(x0, len(paths))
@@ -271,13 +255,12 @@ def total_path_energy(paths:list[Path]):
     total_obstacle_barrier_energy = 0.0
     for k in range(T):
         for i in range(len(paths)):
-            for obs in obstacles: # Push away from obstacles in the same way as from other drones, we can use the same p_eps function since it only depends on the distance.
+            for obs in obstacles: 
                 (dx, dy, dz) = sub_vecs(paths[i][k], obs)
                 distance = vec_length((dx, dy, dz))
                 total_obstacle_barrier_energy += dt * p_eps(distance, eta_safety_distance, 3)
 
     return (total_path_length_energy, total_barrier_energy, total_diversion_energy, total_obstacle_barrier_energy)
-
 
 def gradient_barrier_energy(paths:list[Path]):
     grad_smooth:list[Path] = [[(0,0,0) for _ in range(T)] for _ in range(len(paths))]
@@ -308,7 +291,8 @@ def gradient_barrier_energy(paths:list[Path]):
             term2 = (next[0]/norm_next, next[1]/norm_next, next[2]/norm_next)
             grad_smooth[i][k] = sub_vecs(term1, term2)
         
-        # Diversion gradient: simply the vector from the current point to the reference point, scaled by 2 since we are using the squared distance as energy.
+        # Diversion gradient: simply the vector from the current point to the reference point, 
+        # scaled by 2 since we are using the squared distance as energy.
         for k in range(T):
             if k == 0 or k == T-1:
                 continue
@@ -321,7 +305,7 @@ def gradient_barrier_energy(paths:list[Path]):
                     )
                 )
 
-        # Compute the gradient of the barrier energy with respect to the position of each point in the path.
+        # The gradient of the barrier energy 
         for k in range(T):
             per_point_barrier_force = (0, 0, 0)
             for j in range(len(paths)):
@@ -331,7 +315,7 @@ def gradient_barrier_energy(paths:list[Path]):
                     per_point_barrier_force = add_vecs(per_point_barrier_force, barrier_force_cubic_spline(paths[i][k], paths[j][k], eta_safety_distance))
             grad_barrier[i][k] = scale_vec(dt, per_point_barrier_force)
 
-        # Compute the gradient of the obstacle barrier energy with respect to the position of each point in the path.
+        # The gradient of the obstacle barrier energy.
         for k in range(T):
             per_point_obs_force = (0, 0, 0)
             for obs in obstacles:
@@ -346,8 +330,7 @@ def gradient_barrier_energy(paths:list[Path]):
 def objective(x: np.ndarray, num_paths: int):
     paths = unflatten_paths(x, num_paths)
     path_energy, barrier_energy, diversion_energy, obstacle_barrier_energy = total_path_energy(paths)
-    #return path_energy + barrier_energy + diversion_energy + obstacle_barrier_energy
-    return path_energy + barrier_energy
+    return path_energy + barrier_energy + diversion_energy + obstacle_barrier_energy
 
 def objective_grad(x: np.ndarray, num_paths: int):
     paths = unflatten_paths(x, num_paths)
@@ -356,17 +339,14 @@ def objective_grad(x: np.ndarray, num_paths: int):
     grad = []
     for i in range(len(paths)):
         for k in range(T):
-            #g = add_vecs(add_vecs(add_vecs(grad_smooth[i][k], grad_barrier[i][k]), grad_divert[i][k]), grad_obstac[i][k])
-            g = add_vecs(grad_smooth[i][k], grad_barrier[i][k])
+            g = add_vecs(add_vecs(add_vecs(grad_smooth[i][k], grad_barrier[i][k]), grad_divert[i][k]), grad_obstac[i][k])
             grad.extend(g)
 
     return np.array(grad)
 
-
 def update_mission(mission):
     global drones, x0, bounds
     drones_x0 = [
-        #interpolate_path(mission[i], noise_std=0.000001)
         interpolate_path(mission[i], noise_std=0.01)
         for i in range(len(mission))
     ]
@@ -388,7 +368,6 @@ def update_mission(mission):
 # ----------------------------
 def compute_paths():
     num_drones = 4
-
     update_mission(mission_OG) 
 
     res = minimize(
@@ -403,7 +382,7 @@ def compute_paths():
 
     new_paths = unflatten_paths(res.x, len(drones))
 
-    # plot the paths in matplotlib to visualize the result
+    # Plotting the paths in matplotlib to visualize the result
     if PLOT: 
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -415,7 +394,7 @@ def compute_paths():
             ax.plot(xs, ys, zs, color=colors[i], label=f'Drone {i}')
 
         
-        # plot each single waypoint in the paths as a scatter plot, to better visualize the points where the drones will be at each timestep.
+        # ploting each single waypoint in the paths as a scatter plot
         for i, path in enumerate(new_paths):
             xs = [p[0] for p in path]
             ys = [p[1] for p in path]
@@ -436,7 +415,7 @@ def compute_paths():
         print(f"Failed to find a solution within {TIME_LIMIT_SECONDS} seconds.")
     
     # Missions: ((x,y,z), (x,y,z)) in grid coordinates
-    # turn new_paths into a sequence  of waypoints for each drone, where each waypoint is a tuple of (x,y,z) coordinates. We can just use the points in the new_paths as waypoints, since they are already interpolated to have T points in total. We also need to add the return to origin path at the end of each mission if return_to_origin is True.
+    # turn new_paths into a sequence  of waypoints for each drone, where each waypoint is a tuple of (x,y,z) coordinates. 
     global sequences
     sequences = {
         0: [(new_paths[0][k][0], new_paths[0][k][1], new_paths[0][k][2], 0.0) for k in range(T)],
@@ -450,10 +429,6 @@ def compute_paths():
     sequences[2].append((new_paths[2][-1][0], new_paths[2][-1][1], 0.0, 0.0))
     sequences[3].append((new_paths[3][-1][0], new_paths[3][-1][1], 0.0, 0.0))
     
-
-
-
-
 # ----------------------------
 # Crazyflie URIs (edit as needed)
 # ----------------------------
@@ -463,7 +438,8 @@ uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E707')
 uri4 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709')
 uris = [uri1, uri2, uri3, uri4]
 curr_pos = {uri: (0, 0, 0) for uri in uris}
-current_timestep_dict = {uri: 0 for uri in uris} # This will keep track of the current timestep for each drone during the flight, so we know which point in the sequence to send next.
+# This will keep track of the current timestep for each drone during the flight, so we know which point in the sequence to send next.
+current_timestep_dict = {uri: 0 for uri in uris} 
 last_drone_timestep = 0
 num_runs = 2
 if num_runs > 1:
@@ -471,10 +447,7 @@ if num_runs > 1:
 else:
     return_to_origin = False
 
-
-
-
-return_to_origin_paths = { # Original
+return_to_origin_paths = { # Mission 1
     0: [(1.0, 1.0, 0.0, 0.0),
         (1.0, 1.0, 0.3, 0.0),
         (-1.0, -1.0, 0.3, 0.0),
@@ -524,7 +497,6 @@ position_params = {
     uri4: [3],
 }
 
-
 def path_to_sequence(path: List[Tuple[int, int, int]]) -> List[Tuple[float, float, float, float]]:
     seq: List[Tuple[float, float, float, float]] = []
     for x, y, z in path:
@@ -558,7 +530,6 @@ def position_callback(uri, timestamp, data, logconf):
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    # make sure that last_drone_timestep is updated to the minimum of all current_timestep_dict values, so we know which point in the sequence to send next for each drone.
     # find the minimum timestep across all drones
     global last_drone_timestep
     last_drone_timestep = min(current_timestep_dict.values())
@@ -603,12 +574,10 @@ def run_sequence(scf, num_seq):
 
     time.sleep(0.1)
 
-
 def update_to_return():
     global sequences, backup_sequences
     backup_sequences = sequences
     sequences = return_to_origin_paths
-    
 
 def update_to_old_sequences():
     global sequences, runtimes
@@ -619,8 +588,6 @@ def update_to_old_sequences():
 # Main
 # ----------------------------
 if __name__ == "__main__":
-    # Plan  
-
     backup_sequences = sequences.copy()
     # Fly
     cflib.crtp.init_drivers()
@@ -634,13 +601,13 @@ if __name__ == "__main__":
         uri4: [3]
         }
 
-    for _ in range(num_runs):  # Run the sequence num times
+    for _ in range(num_runs):  # Running the sequence num times
         compute_paths()
         with Swarm(uris, factory=factory) as swarm:
             swarm.parallel_safe(start_position_printing)
             swarm.parallel_safe(run_sequence, args_dict=args_dict)
 
-        # calculate average runtimes and write to file
+        # calculating average runtimes and write to file
         avg_runtime = sum(runtimes) / len(runtimes)
 
         with open("timings_Barrier_Path_plan_18_may.txt", "a") as f:
@@ -652,5 +619,3 @@ if __name__ == "__main__":
                 swarm.parallel_safe(start_position_printing)
                 swarm.parallel_safe(run_sequence, args_dict=args_dict)
             update_to_old_sequences()
-
-

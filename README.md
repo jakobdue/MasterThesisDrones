@@ -1,4 +1,4 @@
-# Multi-Drone Consensus and Barrier Function Framework
+# Multi-Drone Consensus and Barrier Function Master's Thesis
 
 This repository contains the implementation and experimental evaluation framework developed
 for a master's thesis on collision avoidance and coordinated control in multi-drone systems.
@@ -12,7 +12,7 @@ The project focuses primarily on:
 - Path planning algorithms
 - Real-world and simulated drone experiments
 
-The framework includes both theoretical tests and real-world Crazyflie drone experiments.
+The repository includes both theoretical tests and real-world Crazyflie drone experiments.
 
 ---
 
@@ -29,7 +29,7 @@ src/
 │   ├── Barrier/
 │   └── RRT/
 └── README.txt
-/VideosOfDroneFlight
+VideosOfDroneFlight/
 ```
 
 # Main Research Topics
@@ -73,7 +73,7 @@ Metrics include:
 
 - Some scripts are intended specifically for testing.
 - Some scripts require physical drone hardware and/or localization systems.
-- Generated figures are stored inside experiment folders.
+- When runnning the code, the generated figures are stored inside the experiment folders.
 - Certain scripts may require parameter tuning depending on scenario complexity.
 
 

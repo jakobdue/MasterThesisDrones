@@ -1,6 +1,5 @@
 import time
 from turtle import position
-
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
 from cflib.utils import uri_helper
@@ -8,11 +7,9 @@ from cflib.crazyflie.swarm import CachedCfFactory
 from functools import partial
 import random
 from pynput import keyboard
-
-
 from cflib.crazyflie.swarm import Swarm
-# URI to the Crazyflie to connect to
 
+# URI of the Crazyflies to connect to
 uris = [
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
     #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
@@ -24,7 +21,6 @@ uris = [
     #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E708'),
     uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E709'),
     #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710'),
-
     ]
 
 position_params = {uri: [i] for i, uri in enumerate(uris)}
@@ -47,7 +43,6 @@ def on_press(key):
 
 listener = keyboard.Listener(on_press=on_press)
 listener.start()
-
 last_distances = {
     (u1, u2): float('inf')
     for u1 in uris
@@ -56,7 +51,6 @@ last_distances = {
 }
 
 drone_inbound = {uri: False for uri in uris}
-
 curr_pos = {uri: (0, 0, 0) for uri in uris}
                 
 def speed_scaler(distance,inbound):
@@ -99,8 +93,7 @@ def p_eps(z, eps, n):
         raise ValueError("n must be 2 or 3")
     return h_eps(z, eps) / (z ** (n - 1))
 
-
-# find the gradien of the penalty function p_eps with respect to the position of the drone, which is the barrier force
+# Finding the gradien of the penalty function p_eps 
 def barrier_force_cubic_spline(pos1, pos2, eta_safety_distance):
     (dx, dy, dz) = sub_vecs(pos1, pos2)
 
@@ -123,15 +116,13 @@ def square_dist(pos1, pos2):
     dy = pos1[1] - pos2[1]
     dz = pos1[2] - pos2[2]
 
-    return (dx**2 + dy**2 + dz**2)# avoiding sqrt for efficiency, since we only care about relative distances
+    return (dx**2 + dy**2 + dz**2)
 
 def random_goal():
     x = random.uniform(-1.5, 1.5)
     y = random.uniform(-1.5, 1.5)
     z = random.uniform(0.5, 2.0)
     return (x, y, z, 0)
-
-
 
 def take_off(cf, position):
     take_off_time = 2.0
@@ -150,7 +141,7 @@ def position_callback(uri, timestamp, data, logconf):
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    #update last_distances
+    # Updating last_distances
     inbound = False
     for other_uri in curr_pos:
         if other_uri != uri:
@@ -164,31 +155,23 @@ def position_callback(uri, timestamp, data, logconf):
     else:
         drone_inbound[uri] = False
 
-    #print('pos: ({}, {}, {})'.format(x, y, z))
-
-
 def start_position_printing(scf):
     uri = scf.cf.link_uri
-
     log_conf = LogConfig(name='Position', period_in_ms=500)
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
-
     scf.cf.log.add_config(log_conf)
 
-    # Bind uri into the callback
+    # Binding uri into the callback
     log_conf.data_received_cb.add_callback(partial(position_callback, uri))
-
     log_conf.start()
-
 
 def run_sequence(scf, num_seq):
     cf = scf.cf
-
     goal = random_goal()
 
-    # Arm the Crazyflie
+    # Arming the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
 
@@ -204,11 +187,9 @@ def run_sequence(scf, num_seq):
     
     while True:
         print('Setting position {}'.format(goal))
-        while (square_dist(curr_pos[me], goal) > 0.025):  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
- 
+        while (square_dist(curr_pos[me], goal) > 0.025): 
             current_vec = sub_vecs(goal, curr_pos[me])
             current_vec_length = vec_length(current_vec) 
-            
 
             force_list = []
             closest_drone_dist = float('inf')
@@ -219,20 +200,17 @@ def run_sequence(scf, num_seq):
                     closest_drone_dist = dist
             
             max_speed = speed_scaler(closest_drone_dist, drone_inbound[me])
-            #print(f'Closest drone distance: {closest_drone_dist:.2f}, max speed set to: {max_speed:.2f}')
-            # Scale the current vector to unit vector
+            # Scaling the current vector to unit vector
             current_vec_max_speed = max_speed
             current_vec = scale_vec(current_vec, current_vec_max_speed / current_vec_length if current_vec_length > current_vec_max_speed else 1)
-            # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+            # Calculating the total barrier force by summing the contributions from all other drones in the swarm
             force = (0, 0, 0)
             for f in force_list:
                 force = add_vecs(force, f)
             
-            #print(f'Calculated individual barrier forces: {force_list}')
-
             if force != (0, 0, 0):
                 vec_to_send = add_vecs(force, current_vec)
-                #Scale the total vector to the max_reactiion if it is too long
+                #Scaling the total vector to the max_reactiion if it is too long
                 vec_to_send_length = vec_length(vec_to_send)
                 if vec_to_send_length > max_speed:
                     current_vec = scale_vec(vec_to_send, max_speed / vec_to_send_length) 
@@ -252,7 +230,7 @@ def run_sequence(scf, num_seq):
         
     time.sleep(0.5)
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+    # Giving control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
     # Make sure that the last packet leaves before the link is closed
@@ -271,7 +249,6 @@ def run_sequence(scf, num_seq):
     # since the message queue is not flushed before closing
     time.sleep(0.1)
 
-
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
     
@@ -280,12 +257,8 @@ if __name__ == '__main__':
         swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
 
-    # calculate average runtimes and write to file
+    # calculating average runtimes and write to file
     avg_runtime = sum(runtimes) / len(runtimes)
 
     with open("timings_barrier_Patroll_mission.txt", "a") as f:
         f.write(f"Barrier Improved, dynamic speed + orientation aware algorithm runs in: {avg_runtime}\n")
-
-
-
-

@@ -8,7 +8,6 @@ import time
 type Point = tuple[float, float, float]
 type Path  = list[Point] # points is a list of tuples with (x,y,z) coordinates.
 
-
 # ----------------------------
 # 1. Settings
 # ----------------------------
@@ -21,7 +20,6 @@ GRADIENT_CHECK = True
 PLOT = False
 DEBUG = False
 AUTOAXIS_IN_CIRCLEPLOT = True
-
 
 random.seed(42) # For reproducibility
 
@@ -65,7 +63,6 @@ obstacle_run_mission = {
 # ----------------------------
 # 2. Helpers
 # ----------------------------
-
 def add_vecs(vec1, vec2):
     return (vec1[0] + vec2[0], vec1[1] + vec2[1], vec1[2] + vec2[2])
 
@@ -137,7 +134,6 @@ def compute_average_path_length(paths):
             count += 1
     return (total_length / count) if count > 0 else None
 
-
 def generate_circle_crossing(num_drones, radius=CIRCLE_RADIUS, z=0.7):
     sequences = {}
     for i in range(num_drones):
@@ -155,8 +151,7 @@ def generate_circle_crossing(num_drones, radius=CIRCLE_RADIUS, z=0.7):
 
     return sequences
 
-
-# Interpolate points in the paths to have T points in total. There is always two points in the path, so we can interpolate T-2 points between them.
+# Interpolating points in the paths to have T points in total.
 def interpolate_path(path: Path, noise_std: float = 0.001) -> Path:
     if len(path) < 2:
         raise ValueError("Path must have at least 2 points to interpolate.")
@@ -165,13 +160,13 @@ def interpolate_path(path: Path, noise_std: float = 0.001) -> Path:
     interpolated_path = []
     
     for t in range(T):
-        alpha = t / (T - 1)  # alpha goes from 0 to 1
+        alpha = t / (T - 1)  # Alpha goes from 0 to 1
         point = (
             start[0] + alpha * (end[0] - start[0]),
             start[1] + alpha * (end[1] - start[1]),
             start[2] + alpha * (end[2] - start[2])
         )
-        # add noise only to interior points
+        # Add noise only to interior points
         if 0 < t < T-1:
             noise = np.random.normal(0.0, noise_std, size=3)
             point = (
@@ -210,11 +205,10 @@ def unflatten_paths(x: np.ndarray, num_paths: int) -> list[Path]:
         paths.append(path)
     return paths
 
-# Global variables to hold the current mission's paths and bounds, which will be updated before each optimization run.
+# Global variables to hold the current mission's paths and bounds
 drones = []
 x0 = flatten_paths(drones)
 bounds = make_bounds(drones)
-
 
 # ----------------------------
 # Barrier function definitions
@@ -258,6 +252,7 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
         return (0, 0, 0)
 
     z = math.sqrt(z2 + 1e-8)
+
     # Compute h(z)
     v = 2 * z / eps
     B = cubic_spline_B(v)
@@ -267,18 +262,16 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
     B_prime = cubic_spline_B_derivative(v)
     h_prime = (3 / eps) * B_prime
 
-    n = 3  # since we're using 3D
+    n = 3  # Since we're using 3D
 
     # p_prime (Negative gradient of the penalty function with respect to z)
     denom = max(z**(n+1), 1e-6)
     p_prime = (z * h_prime - (n-1) * h) / denom
 
-    # gradient = dp/dz * (x - y)
+    # Gradient = dp/dz * (x - y)
     grad = (p_prime * dx, p_prime * dy, p_prime * dz)
     
     return grad
-
-
 
 def total_path_energy(paths:list[Path]): 
     ref_x0 = unflatten_paths(x0, len(paths))
@@ -305,7 +298,7 @@ def total_path_energy(paths:list[Path]):
     total_obstacle_barrier_energy = 0.0
     for k in range(T):
         for i in range(len(paths)):
-            for obs in obstacles: # Push away from obstacles in the same way as from other drones, we can use the same p_eps function since it only depends on the distance.
+            for obs in obstacles: 
                 (dx, dy, dz) = sub_vecs(paths[i][k], obs)
                 distance = vec_length((dx, dy, dz))
                 total_obstacle_barrier_energy += dt * p_eps(distance, eta_safety_distance, 3)
@@ -322,11 +315,13 @@ def gradient_barrier_energy(paths:list[Path]):
     eps = 1e-8
 
     for i in range(len(paths)):
+
         # Smoothness gradient:
         # k = 0
         prev = sub_vecs(paths[i][1], paths[i][0])
         norm = math.sqrt(squared_vec_length(prev) + 1e-8)
         grad_smooth[i][0] = scale_vec(-1 / norm, prev)
+
         # k = T-1
         prev = sub_vecs(paths[i][T-1], paths[i][T-2])
         norm = math.sqrt(squared_vec_length(prev) + 1e-8)
@@ -342,30 +337,34 @@ def gradient_barrier_energy(paths:list[Path]):
             term2 = (next[0]/norm_next, next[1]/norm_next, next[2]/norm_next)
             grad_smooth[i][k] = sub_vecs(term1, term2)
         
-        # Diversion gradient: simply the vector from the current point to the reference point, scaled by 2 since we are using the squared distance as energy.
+        # Diversion gradient: simply the vector from the current point to the reference point.
         for k in range(T):
             if k == 0 or k == T-1:
                 continue
             else:
                 grad_divert[i][k] = scale_vec(
-                    2 * dt,
+                    2 * dt, 
                     sub_vecs(
                         paths[i][k],
                         ref_x0[i][k]
                     )
                 )
 
-        # Compute the gradient of the barrier energy with respect to the position of each point in the path.
+        # Computing the gradient of the barrier energy 
+        # with respect to the position of each point in the path.
         for k in range(T):
             per_point_barrier_force = (0, 0, 0)
             for j in range(len(paths)):
                 if j == i:
                     continue
                 else: 
-                    per_point_barrier_force = add_vecs(per_point_barrier_force, barrier_force_cubic_spline(paths[i][k], paths[j][k], eta_safety_distance))
+                    per_point_barrier_force = add_vecs(
+                        per_point_barrier_force, barrier_force_cubic_spline(
+                            paths[i][k], paths[j][k], eta_safety_distance))
             grad_barrier[i][k] = scale_vec(dt, per_point_barrier_force)
 
-        # Compute the gradient of the obstacle barrier energy with respect to the position of each point in the path.
+        # Compute the gradient of the obstacle barrier energy
+        # with respect to the position of each point in the path.
         for k in range(T):
             per_point_obs_force = (0, 0, 0)
             for obs in obstacles:
@@ -394,7 +393,6 @@ def objective_grad(x: np.ndarray, num_paths: int):
 
     return np.array(grad)
 
-
 def update_mission(mission):
     global drones, x0, bounds
     drones_x0 = [
@@ -412,8 +410,6 @@ def update_mission(mission):
 # ==========================================================================
 # =================================== Testing ==============================
 # ==========================================================================
-
-
 
 # ----------------------------
 # Barrier OG missions 
@@ -470,8 +466,6 @@ def Barrier_missions(missions):
 
         f.write("\n")
 
-
-
 # ----------------------------
 # Barrier Circle Crossing missions
 # ----------------------------
@@ -482,7 +476,7 @@ def Barrier_Circle_crossing():
     results = []
     paths = []
     global T
-    T = 35 # Since the distance of the path is 12 meters we need atleast 12/0.4 = 30 timesteps to be able to find a solution that does not violate the safety distance, we add some extra timesteps in case the path gets longer. 
+    T = 35 # We need 12m/0.4 = 30 timesteps to be able to find a solution.
 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
@@ -564,7 +558,7 @@ def Barrier_Circle_crossing():
                 f"at timestep {best_k} between drone {best_i} and {best_j}\n"
             )
 
-        # append everything to reason_for_failure
+        # Appending everything to reason_for_failure
         reason_for_failure += "".join(closest_results)
 
 
@@ -584,7 +578,7 @@ def Barrier_Circle_crossing():
         f.write(f"{reason_for_failure}")
         f.write("\n\n")
     
-    #plot and save all paths in folder CircleCrossingFiguresBarrier/ as Circle_crossing_i.png and make sure that the bounds of the plot is 10X10X10 
+    # Plot and save all paths
     if SAVE_FIGS:
         for i, paths in enumerate(paths):
             fig = plt.figure()
@@ -610,10 +604,6 @@ def Barrier_Circle_crossing():
 
     T = 10
         
-
-
-
-
 # ----------------------------
 # Barrier Random missions
 # ----------------------------
@@ -655,8 +645,6 @@ def Barrier_Random_Missions():
             )
 
         f.write("\n")
-
-
 
 # ----------------------------
 # Barrier with increasing number of obstacles
@@ -750,22 +738,20 @@ def Barrier_Increasing_Obstacles():
                     plt.show()
                 plt.savefig(f'ObstaclesFiguresBarrier/Barrier_path_{i}.png')
                 plt.close()
-        
-
 
 # ----------------------------
 # Gradient check
 # ----------------------------
 def check_gradient():
-    # --- 1. Use a small deterministic test ---
+    # small deterministic test
     global T
     T_backup = T
-    T = 5  # smaller problem for stability
+    T = 5  # small problem for stability
 
-    # Temporary mission (small, simple)
+    # Temporary mission 
     test_mission = {
         0: [(-0.5, -0.5, 0.7), (0.5, 0.5, 0.7)],
-        1: [(-0.5,  0.6, 0.7), (0.5, -0.4, 0.7)],  # small offset
+        1: [(-0.5,  0.6, 0.7), (0.5, -0.4, 0.7)],  
         }
 
     # No obstacles for first test
@@ -773,22 +759,22 @@ def check_gradient():
     obstacles = set()
     update_mission(test_mission)
 
-    # --- 2. Wrap functions (remove extra args) ---
+    # Wrap functions (remove extra args)
     def f_wrapped(x):
         return objective(x, len(drones))
 
     def grad_wrapped(x):
         return objective_grad(x, len(drones))
 
-    # --- 3. Run check ---
+    # Run check 
     error = check_grad(f_wrapped, grad_wrapped, x0)
 
-    # --- 4. Test WITH obstacles ---
+    # Test with obstacles 
     update_random_obstacles(1,[],[])  # add one obstacle
 
     error_obs = check_grad(f_wrapped, grad_wrapped, x0)
 
-    # --- 5. Restore state ---
+    # Restore state 
     T = T_backup
 
     return error, error_obs
@@ -803,10 +789,11 @@ def check_gradient_components():
     global obstacles
     obstacles = set()
 
-    # --- OBSTACLES ---
+    # Obstacles
     missions = generate_random_missions(2)
     update_mission(missions)
-    # Collapse missions to one list of all start and goal positions to check that the generated obstacles do not overlap with any of them.
+
+    # Collapse missions to one list
     missions_list = [pos for drone in missions.values() for pos in drone]
     update_random_obstacles(5, missions_list,[])
 
@@ -815,10 +802,9 @@ def check_gradient_components():
 
     x = x0.copy()
 
-    # --- FULL ---
     full = check_grad(wrap(objective), wrap(objective_grad), x)
 
-    # --- PATH LENGTH ONLY ---
+    # Path length energy 
     def f_path(x):
         paths = unflatten_paths(x, len(drones))
         return total_path_energy(paths)[0]
@@ -830,7 +816,7 @@ def check_gradient_components():
 
     path = check_grad(f_path, g_path, x)
 
-    # --- DRONE BARRIER ---
+    # Drone barrier energy
     def f_barrier(x):
         paths = unflatten_paths(x, len(drones))
         return total_path_energy(paths)[1]
@@ -842,7 +828,7 @@ def check_gradient_components():
 
     barrier = check_grad(f_barrier, g_barrier, x)
 
-    # --- DIVERSION ---
+    # Diversion energy
     def f_div(x):
         paths = unflatten_paths(x, len(drones))
         return total_path_energy(paths)[2]
@@ -854,7 +840,7 @@ def check_gradient_components():
 
     diversion = check_grad(f_div, g_div, x)
 
-    # --- OBSTACLE ---
+    # OBSTACLE
     def f_obs(x):
         paths = unflatten_paths(x, len(drones))
         return total_path_energy(paths)[3]
@@ -866,9 +852,6 @@ def check_gradient_components():
 
     obstacle = check_grad(f_obs, g_obs, x)
     return full, path, barrier, diversion, obstacle
-
-
-
 
 # ----------------------------
 # Call all the functions and save results
@@ -903,8 +886,9 @@ if __name__ == "__main__":
             f.write("====================================================\n\n")
     
     print(f"Results file {RESULTS_FILE} initialized.")
-    
-    update_random_obstacles(0,[],[])  # initialize obstacles to empty set
+
+    # Always initialize obstacles to empty set
+    update_random_obstacles(0,[],[])  
     print("Starting Barrier pathplanning benchmarks...\n")
     Barrier_missions(missions)
     print("\n\n")
@@ -925,8 +909,3 @@ if __name__ == "__main__":
     print("\n\n") 
 
     print(f"Results saved to {RESULTS_FILE}")
-    
-
-
-
-

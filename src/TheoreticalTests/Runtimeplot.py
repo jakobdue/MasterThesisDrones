@@ -13,7 +13,6 @@ def extract_runtime_data(text):
 
     return drones, times
 
-
 joint_astar_text = """
 Drones: 1, Steps: 61, Time: 0.002 s, Average length: 12.17
 Drones: 2, Steps: 61, Time: 0.051 s, Average length: 12.17
@@ -498,7 +497,6 @@ def extract_rrt_data(text):
         times.append(float(match.group(2)))
 
     return drones, times
-
 
 data = {
     "Joint A*": extract_runtime_data(joint_astar_text),

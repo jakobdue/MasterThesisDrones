@@ -1,6 +1,5 @@
 import time
 from turtle import position
-
 import cflib.crtp
 from cflib.crazyflie.log import LogConfig
 from cflib.utils import uri_helper
@@ -9,11 +8,9 @@ from functools import partial
 import random
 from pynput import keyboard
 import math
-
-
 from cflib.crazyflie.swarm import Swarm
-# URI to the Crazyflie to connect to
 
+# URI of the Crazyflie to connect to
 uris = [
     uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E701'),
     #uri_helper.uri_from_env(default='radio://0/80/2M/E7E7E7E702'),
@@ -26,7 +23,6 @@ uris = [
     #uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E709'),
     uri_helper.uri_from_env(default='radio://1/100/2M/E7E7E7E710'),
     ]
-
 
 position_params = {uri: [i] for i, uri in enumerate(uris)}
 
@@ -102,7 +98,7 @@ def cubic_spline_B(v):
     else:
         return 0
 
-# find the gradien of the penalty function p_eps with respect to the position of the drone, which is the barrier force
+# Find the gradien of the penalty function p_eps.
 def cubic_spline_B_derivative(v):
     if v < 1:
         return -2*v + 1.5 * v ** 2
@@ -122,12 +118,12 @@ def barrier_force_cubic_spline(pos1, pos2, eps):
     if z >= eps:
         return (0, 0, 0), z
 
-    # Compute h(z)
+    # Computing h(z)
     v = 2 * z / eps
     B = cubic_spline_B(v)
     h = 1.5 * B
 
-    # Compute h'(z)
+    # Computing h'(z)
     B_prime = cubic_spline_B_derivative(v)
     h_prime = (3 / eps) * B_prime
 
@@ -146,15 +142,13 @@ def square_dist(pos1, pos2):
     dy = pos1[1] - pos2[1]
     dz = pos1[2] - pos2[2]
 
-    return (dx**2 + dy**2 + dz**2)# avoiding sqrt for efficiency, since we only care about relative distances
+    return (dx**2 + dy**2 + dz**2)
 
 def random_goal():
     x = random.uniform(-1.5, 1.5)
     y = random.uniform(-1.5, 1.5)
     z = random.uniform(0.5, 2.0)
     return (x, y, z, 0)
-
-
 
 def take_off(cf, position):
     take_off_time = 1.0
@@ -167,7 +161,6 @@ def take_off(cf, position):
     for i in range(steps):
         cf.commander.send_velocity_world_setpoint(0, 0, vz, 0)
         time.sleep(sleep_time)
-
 
 def landing(cf, position):
     landing_time = 3.0
@@ -186,7 +179,7 @@ def position_callback(uri, timestamp, data, logconf):
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    #update last_distances
+    # Updating last_distances
     inbound = False
     for other_uri in curr_pos:
         if other_uri != uri:
@@ -199,11 +192,6 @@ def position_callback(uri, timestamp, data, logconf):
         drone_inbound[uri] = True
     else:
         drone_inbound[uri] = False
-    
-
-
-    #print('pos: ({}, {}, {})'.format(x, y, z))
-
 
 def start_position_printing(scf):
     uri = scf.cf.link_uri
@@ -212,19 +200,16 @@ def start_position_printing(scf):
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
-
     scf.cf.log.add_config(log_conf)
 
-    # Bind uri into the callback
+    # Binding uri into the callback
     log_conf.data_received_cb.add_callback(partial(position_callback, uri))
-
     log_conf.start()
-
 
 def run_sequence(scf, num_seq):
     cf = scf.cf
 
-    # Arm the Crazyflie
+    # Arming the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
 
@@ -237,8 +222,7 @@ def run_sequence(scf, num_seq):
    
     time.sleep(1.0)
     
-
-    while True:  # while we are not close enough to the target, 0,025 is five cm since it is the squared distance.
+    while True: 
         dist_list = [(other, last_distances[(me, other)]) for other in others]
         dist_list.sort(key=lambda x: x[1])
         neighbors = [d[0] for d in dist_list[:max_neighbors]]
@@ -267,9 +251,6 @@ def run_sequence(scf, num_seq):
                     else:
                         current_vec = add_vecs(current_vec, (0, 0, -0.2))
             
-            
-
-
         force_list = []
         closest_drone_dist = float('inf')
         for other in others:
@@ -278,34 +259,22 @@ def run_sequence(scf, num_seq):
             if dist < closest_drone_dist: 
                 closest_drone_dist = dist
         
-        
-        #print(f'Closest drone distance: {closest_drone_dist:.2f}, max speed set to: {max_speed:.2f}')
-        # Scale the current vector to unit vector
-        max_speed = 0.12 #speed_scaler(closest_drone_dist, drone_inbound[me])
-        current_vec_max_speed = max_speed
+        # Scaling the current vector to unit vector
+        max_speed = 0.12 
         current_vec_length = vec_length(current_vec)
         
-        
-        
-        
-        
-        #current_vec = scale_vec(current_vec, current_vec_max_speed / current_vec_length if current_vec_length > current_vec_max_speed else 1)
         if current_vec_length > max_speed:
             current_vec = scale_vec(current_vec, max_speed / current_vec_length) 
         
-        
-        
-        # Calculate the total barrier force by summing the contributions from all other drones in the swarm
+        # Calculating the total barrier force by summing the contributions from all other drones in the swarm
         force = (0, 0, 0)
         for f in force_list:
             force = add_vecs(force, f)
         
-        
-
         if force != (0, 0, 0):
             print(f'Calculated barrier force: {force}')
             vec_to_send = add_vecs(force, current_vec)
-            #Scale the total vector to the max_reactiion if it is too long
+            #Scaling the total vector to the max_reactiion if it is too long
             vec_to_send_length = vec_length(vec_to_send)
             if vec_to_send_length > max_speed:
                 current_vec = scale_vec(vec_to_send, max_speed / vec_to_send_length) 
@@ -316,18 +285,12 @@ def run_sequence(scf, num_seq):
             landing(cf, curr_pos[me])
             break
             
-
         if vec_length(current_vec) < 0.05:
             current_vec = (0, 0, 0)
         cf.commander.send_velocity_world_setpoint(current_vec[0], current_vec[1], current_vec[2], 0)
     
-        
-            
-        
-    
-    
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+    # Give control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
     # Make sure that the last packet leaves before the link is closed
@@ -335,13 +298,12 @@ def run_sequence(scf, num_seq):
     time.sleep(0.1)
 
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+    # Give control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
 
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
     time.sleep(0.1)
-
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
@@ -350,8 +312,3 @@ if __name__ == '__main__':
     with Swarm(uris, factory=factory) as swarm:
         swarm.parallel_safe(start_position_printing)
         swarm.parallel_safe(run_sequence, args_dict=position_params)
-
-
-
-
-

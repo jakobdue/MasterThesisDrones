@@ -1,6 +1,5 @@
 
 import time
-
 import cflib.crtp
 from cflib.crazyflie import Crazyflie
 from cflib.crazyflie.log import LogConfig
@@ -15,9 +14,9 @@ import heapq
 from typing import List, Tuple, Set
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-
 from cflib.crazyflie.swarm import Swarm
-# URI to the Crazyflie to connect to
+
+# URI of the Crazyflie to connect to
 uri1 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E709')
 uri2 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E705')
 uri3 = uri_helper.uri_from_env(default='radio://0/100/2M/E7E7E7E710')
@@ -26,21 +25,23 @@ uris = [uri1, uri2, uri3, uri4]
 
 curr_pos = {uri: (0, 0, 0) for uri in uris}
 backup_sequences = {}
+sequences = {}
 num_runs = 3
+PLOT_PATHS = False
+
 if num_runs > 1:
     return_to_origin = True
 else:
     return_to_origin = False
 
-
-missions_ = [ # Original
+missions_ = [ # Mission 1
     ((-5, -5, 0), (5, 5, 0)),
     ((-5, 5, 0), (5, -5, 0)),
     ((0, -5, 0), (0, 5, 0)),
     ((3, -5, 0), (3, 5, 0))
 ]
 
-return_to_origin_paths_ = { # Original
+return_to_origin_paths_ = { # Mission 1
     0: [(1.0, 1.0, 0.0, 0.0),
         (1.0, 1.0, 0.3, 0.0),
         (-1.0, -1.0, 0.3, 0.0),
@@ -59,8 +60,6 @@ return_to_origin_paths_ = { # Original
         (0.6, -1.0, 0.0, 0.0)
     ]
 }
-    
-
 
 missions = [ # Cross
     ((-1, -1, 0), (5, 5, 0)),
@@ -98,15 +97,10 @@ position_params = {
         uri4: [3]
         }
 
-
-# Change the sequence according to your setup
-#             x    y    z  YAW
-
 # 3D Grid Limits
 X_MIN, X_MAX = -5, 5
 Y_MIN, Y_MAX = -5, 5
 Z_MIN, Z_MAX = 0, 9
-
 
 class AStar3D:
     def __init__(self, obstacles: Set[Tuple[int, int, int]]):
@@ -179,10 +173,9 @@ def plan_multiple_paths(pairs: List[Tuple[Tuple[int, int, int],
                                            Tuple[int, int, int]]]):
 
     obstacles = set()
-    # Add missions start and end as obstacles to avoid collisions at start and end
-    
-    all_paths = []
 
+    # Adding missions start and end as obstacles to avoid collisions at start and end
+    all_paths = []
     for start, goal in pairs:
         local_obstacles = set()
         for missions in pairs:
@@ -228,8 +221,7 @@ def plot_paths(paths):
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
 
-
-    # calculate average path length
+    # calculating average path length
     total_length = 0
     count = 0
     for path in paths:
@@ -245,51 +237,42 @@ def plot_paths(paths):
         print(f"Average path length: {total_length / count:.2f}")
 
     plt.show()
-
-    # save to pdf
     fig.savefig("paths.pdf")
 
-
-# Example usage
 paths = plan_multiple_paths(missions)
-#plot_paths(paths)
-
-
-sequences = {}
+if PLOT_PATHS:
+    plot_paths(paths)
 
 for i, path in enumerate(paths):
     if path is None:
         continue
 
     seq = []
-    # run through path and make sure that if the next point is only changing on the same axis as between the previuos point, delete the point to shortcut and only keep directional changing points
+    # Consolidate path by removing points that are on the same line (i.e. only keep points where the direction changes)
     filtered_path = [path[0]]
     for j in range(1, len(path)-2):
         prev = filtered_path[-1]
         curr = path[j]
         next = path[j+1]
 
-        # check if the prev change is on x, y or z 
+        # Checking if the prev change is on x, y or z 
         prev_change = (prev[0] != curr[0], prev[1] != curr[1], prev[2] != curr[2])
         next_change = (curr[0] != next[0], curr[1] != next[1], curr[2] != next[2])
 
         if prev_change == next_change:
-            continue  # skip this point
+            continue  # Skip this point
         else:
             filtered_path.append(curr)
-    filtered_path.append(path[-1])  # add the last point
+    filtered_path.append(path[-1])  # Add the last point
     print("Path", path)
     print(f"Filtered path: {filtered_path}")
     path = filtered_path
 
-    
-    
-
-    # Convert grid path to float format and add yaw=0
+    # Converting grid path to float format and add yaw=0
     for x, y, z in path:
         seq.append((float(x)/100*20, float(y)/100*20, (float(z)+2)/100*20, 0))
 
-    # Add landing point (same x,y, z=0)
+    # Adding landing point (same x,y, z=0)
     last_x, last_y, _ = path[-1]
     seq.append((float(last_x)/100*20, float(last_y)/100*20, 0.0, 0))
 
@@ -307,14 +290,11 @@ def take_off(cf, position):
         cf.commander.send_velocity_world_setpoint(0, 0, vz, 0)
         time.sleep(sleep_time)
 
-
 def position_callback(uri, timestamp, data, logconf):
     x = data['kalman.stateX']
     y = data['kalman.stateY']
     z = data['kalman.stateZ']
     curr_pos[uri] = (x, y, z)
-    #print('pos: ({}, {}, {})'.format(x, y, z))
-
 
 def start_position_printing(scf):
     uri = scf.cf.link_uri
@@ -323,12 +303,10 @@ def start_position_printing(scf):
     log_conf.add_variable('kalman.stateX', 'float')
     log_conf.add_variable('kalman.stateY', 'float')
     log_conf.add_variable('kalman.stateZ', 'float')
-
     scf.cf.log.add_config(log_conf)
 
-    # Bind uri into the callback
+    # Binding uri into the callback
     log_conf.data_received_cb.add_callback(partial(position_callback, uri))
-
     log_conf.start()
 
 def square_dist(pos1, pos2):
@@ -339,21 +317,17 @@ def square_dist(pos1, pos2):
     return (dx**2 + dy**2 + dz**2)
 
 def limit_velocity(cf, xy=0.25, z=0.20):
-    # m/s
     cf.param.set_value('posCtlPid.xVelMax', xy)
     cf.param.set_value('posCtlPid.yVelMax', xy)
     cf.param.set_value('posCtlPid.zVelMax', z)
 
 def run_sequence(scf, num_seq):
     cf = scf.cf
-    #limit_velocity(cf, xy=0.20, z=0.20)
 
-    # Arm the Crazyflie
+    # Arming the Crazyflie
     cf.platform.send_arming_request(True)
     time.sleep(1.0)
 
-    #take_off(cf, sequences[num_seq][0])
-    #time.sleep(1.0)
     start = time.perf_counter()
     me = uris[num_seq]
 
@@ -367,31 +341,25 @@ def run_sequence(scf, num_seq):
             time.sleep(0.1)
 
     cf.commander.send_stop_setpoint()
-    # Hand control over to the high level commander to avoid timeout and locking of the Crazyflie
+    # Give control to the high level commander to avoid timeout and locking of the Crazyflie
     cf.commander.send_notify_setpoint_stop()
     end = time.perf_counter()
     runtime = end - start
     runtimes.append(runtime)
 
-    
-
     # Make sure that the last packet leaves before the link is closed
     # since the message queue is not flushed before closing
     time.sleep(0.1)
-
 
 def update_to_return():
     global sequences, backup_sequences
     backup_sequences = sequences
     sequences = return_to_origin_paths
     
-
 def update_to_old_sequences():
     global sequences, runtimes
     sequences = backup_sequences
     runtimes = []
-    
-
 
 if __name__ == '__main__':
     cflib.crtp.init_drivers()
@@ -403,7 +371,7 @@ if __name__ == '__main__':
         with Swarm(uris, factory=factory) as swarm:
             swarm.parallel_safe(start_position_printing)
             swarm.parallel_safe(run_sequence, args_dict=position_params)
-        # calculate average runtimes and write to file
+        # calculating average runtimes and write to file
         avg_runtime = sum(runtimes) / len(runtimes)
         
         with open("timings_Astar_15_may_fast.txt", "a") as f:
@@ -415,22 +383,3 @@ if __name__ == '__main__':
                 swarm.parallel_safe(start_position_printing)
                 swarm.parallel_safe(run_sequence, args_dict=position_params)
             update_to_old_sequences()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

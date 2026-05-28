@@ -4,11 +4,9 @@ import random
 import time
 from itertools import product
 from typing import Tuple, Set, Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
  
-
 # ----------------------------
 # 1. Settings
 # ----------------------------
@@ -62,7 +60,7 @@ def in_bounds(p):
     x, y, z = p
     return X_MIN <= x <= X_MAX and Y_MIN <= y <= Y_MAX and Z_MIN <= z <= Z_MAX
 
-def split_joint_path(joint_path, num_drones): # Convert from list of joint states to list of individual drone paths
+def split_joint_path(joint_path, num_drones): # Convert from list of joint states
     drone_paths = [[] for _ in range(num_drones)]
     for state in joint_path:
         for i in range(num_drones):
@@ -72,7 +70,8 @@ def split_joint_path(joint_path, num_drones): # Convert from list of joint state
 def compute_average_path_length(paths):
     total_length = 0
     count = 0
-    # First scale all numbers by dividing by 5 to get real world coordinates in meters.
+
+    # Scaling all numbers by dividing by 5 to get real world coordinates in meters.
     paths = [[(p[0] / 5, p[1] / 5, p[2] / 5) for p in path] if path is not None else None for path in paths]
 
     for path in paths:
@@ -92,9 +91,7 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
     if num_drones <= 0:
         return (True, [])
 
-    # ----------------------------
-    # 1. Get integer circle boundary points
-    # ----------------------------
+    # Getting integer circle boundary points
     boundary = []
 
     for x in range(-radius, radius + 1):
@@ -106,14 +103,10 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
     if len(boundary) < 2 * num_drones:
         return (False, [])  # Not enough points to sample from
 
-    # ----------------------------
-    # 2. Sort by angle
-    # ----------------------------
+    # Sorting by angle
     boundary.sort(key=lambda p: math.atan2(p[1], p[0]))
 
-    # ----------------------------
-    # 3. Evenly sample 2*n points
-    # ----------------------------
+    # Evenly sampeling 2*n points
     N = len(boundary)
     step = N / (2 * num_drones)
 
@@ -122,15 +115,13 @@ def generate_circle_crossing(num_drones, radius=None, z=1):
         idx = int(round(i * step)) % N
         sampled.append(boundary[idx])
 
-    # Remove accidental duplicates
+    # Removing accidental duplicates
     sampled = list(dict.fromkeys(sampled))
 
     if len(sampled) < 2 * num_drones:
         return (False, [])  # Not enough unique points after sampling
 
-    # ----------------------------
-    # 4. Pair opposites
-    # ----------------------------
+    # Pair opposites
     pairs = []
     half = len(sampled) // 2
 
@@ -153,6 +144,7 @@ def generate_random_missions(num_drones=4):
                     random.randint(Z_MIN + 1, Z_MAX - 1))
             starts.append(start)
             goals.append(goal)
+
         # Add the two lists and check for duplicates, if there are any, generate new ones
         if len(set(starts + goals)) == 2 * num_drones:
             break
@@ -161,10 +153,12 @@ def generate_random_missions(num_drones=4):
 def generate_random_obstacles(num_obstacles):
     obstacles = set()
     new_obstacles_generated = True
+
     # Also check that the time does not run out 
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while len(obstacles) < num_obstacles:
         obs = (random.randint(X_MIN, X_MAX), random.randint(Y_MIN, Y_MAX), random.randint(Z_MIN, Z_MAX))
+
         # Check that not start or goal:
         if obs in mission_start_obstacle_run or obs in mission_goal_obstacle_run:
             continue
@@ -184,7 +178,7 @@ def update_room_size(room_scalar):
     Z_MIN, Z_MAX = 0, 9 * room_scalar
 
 # ----------------------------
-# 3. Joint A*
+#  Joint A*
 # ----------------------------
 class JointAStar3D:
     def __init__(self, obstacles: Set[Tuple[int, int, int]] = None):
@@ -281,7 +275,6 @@ class JointAStar3D:
             path.append(current)
         return path[::-1]
 
-
 # ----------------------------
 # Hirachical A*
 # ----------------------------
@@ -343,9 +336,7 @@ def plan_multiple_paths(pairs: list[Tuple[Tuple[int, int, int],
                         obstacles_in: Set[Tuple[int, int, int]] = None):
 
     obstacles = obstacles_in if obstacles_in else set()
-    
-    # Add missions start and end as obstacles to avoid collisions at start and end
-    
+        
     all_paths = []
 
     for start, goal in pairs:
@@ -367,16 +358,13 @@ def plan_multiple_paths(pairs: list[Tuple[Tuple[int, int, int],
         
     return all_paths
 
-
 # ==========================================================================
 # =================================== Testing ==============================
 # ==========================================================================
 
-
 # ----------------------------
 # Test OG missions joint A*
 # ----------------------------
-
 def Astar_Joint_missions(missions):
     num_drones = 4
 
@@ -425,7 +413,6 @@ def Astar_Joint_missions(missions):
 
         f.write(f"Failed runs: {failed_runs}\n")
 
-
 # ----------------------------
 # Hirachical A* for missions
 # ----------------------------
@@ -456,7 +443,7 @@ def Astar_hirachical_missions(missions):
                 "average_length": avg_length
             })
 
-            # write results
+            # Write results
             for result in lines:
                 f.write(
                     f"Drones: {result['num_drones']}, "
@@ -468,7 +455,6 @@ def Astar_hirachical_missions(missions):
 
         f.write(f"Failed runs: {failed_runs}\n")
             
-
 # ----------------------------
 # Circle crossing with joint A*
 # ----------------------------
@@ -484,7 +470,7 @@ def joint_Astar_circle_crossing():
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
         succes, pairs = generate_circle_crossing(num_drones)
-        if not succes: # update room size and try again
+        if not succes: # Update room size and try again
             print(f"Failed to generate circle crossing pairs for {num_drones} drones. Increasing room size and trying again.")
             update_room_size(ROOM_SCARLAR * 2)
             failed_runs += 1
@@ -517,7 +503,7 @@ def joint_Astar_circle_crossing():
         last_successful_num_drones = num_drones
         num_drones += 1
 
-    # plot the last successful path
+    # Plot the last successful path
     if PLOT and last_path is not None:
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
@@ -527,7 +513,7 @@ def joint_Astar_circle_crossing():
             x, y, z = zip(*path)
             ax.plot(x, y, z, label=f'Drone {j+1}')
 
-        # plot the circle for reference
+        # Plot the circle for reference
         theta = np.linspace(0, 2 * np.pi, 100)
         x_circle = CIRCLE_RADIUS * np.cos(theta)
         y_circle = CIRCLE_RADIUS * np.sin(theta)
@@ -547,7 +533,6 @@ def joint_Astar_circle_crossing():
         if SHOW_PLOTS:
             plt.show()
         
-
     # Save results to file
     with open(RESULTS_FILE, "a") as f:
         f.write("\nJoint A* results: Circle crossing:\n")
@@ -585,7 +570,7 @@ def hirachical_Astar_circle_crossing():
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
         succes, pairs = generate_circle_crossing(num_drones, radius=CIRCLE_RADIUS)
-        if not succes: # update room size and try again
+        if not succes: # Update room size and try again
             print(f"Failed to generate circle crossing pairs for {num_drones} drones. Increasing room size and trying again.")
             room_size *= 2
             update_room_size(room_size)
@@ -653,7 +638,7 @@ def hirachical_Astar_circle_crossing():
             x, y, z = zip(*path)
             ax.plot(x, y, z, label=f'Drone {j+1}')
 
-        # plot the circle for reference
+        # Plot the circle for reference
         theta = np.linspace(0, 2 * np.pi, 100)
         x_circle = CIRCLE_RADIUS * np.cos(theta)
         y_circle = CIRCLE_RADIUS * np.sin(theta)
@@ -685,7 +670,7 @@ def Joint_Astar_random_missions():
     lenghts = []
     failed_runs = 0
 
-    # Store results for each successful run
+    # Storing results for each successful run
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
         starts, goals = generate_random_missions(num_drones)
@@ -706,7 +691,7 @@ def Joint_Astar_random_missions():
         lenghts.append(avg_length)
         num_successful_path += 1
 
-    # Save results to file
+    # Saving results to file
     with open(RESULTS_FILE, "a") as f:
         f.write("\nJoint A* results: Random missions:\n")
 
@@ -718,8 +703,6 @@ def Joint_Astar_random_missions():
 
         f.write("\n")
 
-
-
 # ----------------------------
 # Hirachical A* random missions 4 Drones
 # ----------------------------
@@ -729,7 +712,7 @@ def Hirachical_Astar_random_missions():
     lenghts = []
     failed_runs = 0
 
-    # Store results for each successful run
+    # Storing results for each successful run
     deadline = time.perf_counter() + TIME_LIMIT_SECONDS
     while True:
         if deadline - time.perf_counter() <= 0:
@@ -747,7 +730,7 @@ def Hirachical_Astar_random_missions():
         lenghts.append(avg_length)
         num_successful_path += 1
 
-    # Save results to file
+    # Saving results to file
     with open(RESULTS_FILE, "a") as f:
         f.write("\nHirachical A* results: Random missions:\n")
         f.write(
@@ -796,7 +779,7 @@ def Joint_Astar_obstacle_run(mission):
         lenghts.append(avg_length)
         num_obstacles += 1
 
-    # Save results to file
+    # Saving results to file
     with open(RESULTS_FILE, "a") as f:
         f.write("\nJoint A* results: Random obstacles:\n")
         f.write(
@@ -812,19 +795,19 @@ def Joint_Astar_obstacle_run(mission):
         f.write(f"Failed runs: {failed_runs}\n")
         f.write("\n")
 
-    # Plot every tenth path figs and save as pngs
+    # Plotting every tenth path figs and save as pngs
     if PLOT:
         for i, (joint_path, obstacles, elapsed) in enumerate(results):
             if i % 10 == 0 and joint_path is not None:
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')
 
-                # Plot obstacles
+                # Plotting obstacles
                 if obstacles:
                     obs_x, obs_y, obs_z = zip(*obstacles)
                     ax.scatter(obs_x, obs_y, obs_z, c='red', marker='x', label='Obstacles')
 
-                # Plot paths
+                # Plotting paths
                 drone_paths = split_joint_path(joint_path, num_drones)
                 for j, path in enumerate(drone_paths):
                     x, y, z = zip(*path)
@@ -841,7 +824,6 @@ def Joint_Astar_obstacle_run(mission):
                 
                 plt.close()
 
-
 # ----------------------------
 # Hirachical A* with increasing number of obstacles
 # ----------------------------
@@ -849,7 +831,7 @@ def Hirachical_Astar_obstacle_run(mission):
     num_obstacles = 1
     new_obstacles_generated = True
 
-    # Store results for each successful run
+    # Storing results for each successful run
     results = []
     lenghts = []
     failed_runs = 0
@@ -862,7 +844,8 @@ def Hirachical_Astar_obstacle_run(mission):
 
         starts, goals = mission
         obstacles, new_obstacles_generated = generate_random_obstacles(num_obstacles)
-        # Make copy of the obstacles set to avoid modifying the original one in the planner
+
+        # Making a copy of the obstacles set to avoid modifying the original one in the planner
         obs_copy = set(obstacles) if obstacles else set()
         obstacles = obstacles if obstacles else set()
 
@@ -881,7 +864,7 @@ def Hirachical_Astar_obstacle_run(mission):
 
         num_obstacles += 1
 
-    # Save results to file
+    # Saving results to file
     with open(RESULTS_FILE, "a") as f:
         f.write("\nHirachical A* results: Random obstacles:\n")
         f.write(
@@ -897,19 +880,19 @@ def Hirachical_Astar_obstacle_run(mission):
         f.write(f"Failed runs: {failed_runs}\n")
         f.write("\n")
 
-    # plot every tenth path figs and save as pngs
+    # Plotting every tenth path figs and save as pngs
     if PLOT:
         for i, (paths, obstacles, elapsed) in enumerate(results):
             if i % 10 == 0 and paths is not None:
                 fig = plt.figure()
                 ax = fig.add_subplot(111, projection='3d')
 
-                # Plot obstacles
+                # Plotting obstacles
                 if obstacles:
                     obs_x, obs_y, obs_z = zip(*obstacles)
                     ax.scatter(obs_x, obs_y, obs_z, c='red', marker='x', label='Obstacles')
 
-                # Plot paths
+                # Plotting paths
                 for j, path in enumerate(paths):
                     if path is None:
                         continue
@@ -927,10 +910,8 @@ def Hirachical_Astar_obstacle_run(mission):
                 
                 plt.close()
 
-
-
 # ----------------------------
-# Call all the functions and save results
+# Call all functions and save results
 # ----------------------------
 if __name__ == "__main__":
     with open(RESULTS_FILE, "w") as f:
